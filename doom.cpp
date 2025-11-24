@@ -59,6 +59,13 @@ vector<vector<double>> translate(double x, double y, double z) {
             {0, 0, 0, 1}};
 }
 
+vector<vector<double>> translate_inv(double x, double y, double z) {
+    return {{1, 0, 0, -x},
+            {0, 1, 0, -y},
+            {0, 0, 1, -z},
+            {0, 0, 0, 1}};
+}
+
 vector<vector<double>> projection_m = {{1, 0, 0, 0},
                                     {0, 1, 0, 0},
                                     {0, 0, 1, 1},
@@ -123,7 +130,7 @@ vector<vector<int>> project(vector<vector<double>> points, vector<double> transl
         vector<double> ttf = three_to_four(points[i]);
         vector<double> translated = matrix_mult(translate(translation[0], translation[1], translation[2]), ttf);
         // convert to camera space (mult with rot^-1 * trans^-1)
-        vector<double> camerad = matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), inverse(translate(c_pos[0], c_pos[1], c_pos[2]))), translated);
+        vector<double> camerad = matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), translate_inv(c_pos[0], c_pos[1], c_pos[2])), translated);
         projected_points[i] = matrix_mult(projection_m, camerad);
     
         double x = projected_points[i][0];
@@ -190,11 +197,12 @@ void render(vector<vector<int>> image) {
                 /*
                 if (i == 0 || i == y_size-1) output += '-';
                 else if (j == 0 || j == x_size-1) output += '|';
-                else if (image[i-1][j] == 1 || image[i+1][j] == 1) output += '|';
+                else if (image[i-1][j] == 1 && image[i+1][j] == 1) output += '|';
                 else if (image[i-1][j+1] == 1 && image[i+1][j-1] == 1) output += '/';
                 else if (image[i-1][j-1] == 1 && image[i+1][j+1] == 1) output += '\\\\';
                 else  output += '-';
                 */
+                
                 
 
             }
@@ -203,6 +211,10 @@ void render(vector<vector<int>> image) {
         output += '\n';
     }
     cout << "\x1b[H" << output;
+}
+
+bool isKeyDown(int k) {
+    return GetAsyncKeyState(k) & 0b1000000000000000;
 }
 
 int main() {
@@ -221,23 +233,46 @@ int main() {
     cout << "\x1b[2J";
     cout << "\x1b[?25l";
 
+    vector<vector<int>> cube_points;
+    vector<double> cube_trans = {0.0, 0.0, 5.0};
+    camera_pos = {0, 0, 0};
+    camera_rot = {0, 0, 0};
+
     int s = 0;
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 1000000; ++i) {
         int t = i % 6;
         if (i % 6 == 0) s = (s+1) % 4;
         for (auto &row : image) fill(row.begin(), row.end(), 0);
-        vector<vector<int>> cube_points;
-        vector<double> cube_trans = {0.0, 0.0, 5.0};
-        camera_pos = {0, 0, 0};
-        camera_rot = {0, 0, 0};
+
+        if (isKeyDown(VK_LEFT))
+            camera_rot[1] += 0.03;
+        if (isKeyDown(VK_RIGHT))
+            camera_rot[1] -= 0.03;
+        if (isKeyDown(0x41)) { // a
+            camera_pos[0] -= cos(camera_rot[1])*0.05;
+            camera_pos[2] -= sin(camera_rot[1])*0.05;
+        }
+        if (isKeyDown(0x44)) { // d
+            camera_pos[0] += cos(camera_rot[1])*0.05;
+            camera_pos[2] += sin(camera_rot[1])*0.05;
+        }
+            
+        if (isKeyDown(0x57)) { // w
+            camera_pos[0] -= sin(camera_rot[1])*0.05;
+            camera_pos[2] += cos(camera_rot[1])*0.05;
+        }
+        if (isKeyDown(0x53)) {// s
+            camera_pos[0] += sin(camera_rot[1])*0.05;
+            camera_pos[2] -= cos(camera_rot[1])*0.05;
+        }
         /*
         if (s == 0) cube_trans = {-3.0+t, 3, 6.0};
         else if (s == 1) cube_trans = {3.0, 3.0-t, 6.0};
         else if (s == 2) cube_trans = {3.0-t, -3.0, 6.0};
         else if (s == 3) cube_trans = {-3.0, -3.0+t, 6.0};
         */
-        if (s == 0 || s == 2) {camera_rot = {0, -0.6+t*0.2, 0.0}; camera_pos = {0, -1.2+t*0.4, 5.0};}
-        else if (s == 1 || s == 3) {camera_rot = {0, 0.6-t*0.2, 0.0}; camera_pos = {0, -1.2+t*0.4, 5.0};}
+        //if (s == 0 || s == 2) {camera_rot = {0, -0.6+t*0.2, 0.0}; camera_pos = {0, -1.2+t*0.4, 5.0};}
+        //else if (s == 1 || s == 3) {camera_rot = {0, 0.6-t*0.2, 0.0}; camera_pos = {0, -1.2+t*0.4, 5.0};}
         cube_points = project(cube, cube_trans, camera_pos, camera_rot);
         draw_line(cube_points[0], cube_points[1]);
         draw_line(cube_points[1], cube_points[2]);
@@ -252,7 +287,7 @@ int main() {
         draw_line(cube_points[2], cube_points[6]);
         draw_line(cube_points[3], cube_points[7]);
         render(image);
-        Sleep(250);
+        Sleep(10);
     }
         
     return 0;
