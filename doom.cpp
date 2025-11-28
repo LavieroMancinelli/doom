@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <windows.h>
+#include <algorithm>
 using namespace std; 
 
 const int IMAGE_HEIGHT = 40;
@@ -52,14 +53,14 @@ vector<double> matrix_mult(const vector<vector<double>> &a, const vector<double>
     return res;
 }
 
-vector<vector<double>> translate(double x, double y, double z) {
+vector<vector<double>> translate_m(double x, double y, double z) {
     return {{1, 0, 0, x},
             {0, 1, 0, y},
             {0, 0, 1, z},
             {0, 0, 0, 1}};
 }
 
-vector<vector<double>> translate_inv(double x, double y, double z) {
+vector<vector<double>> translate_m_inv(double x, double y, double z) {
     return {{1, 0, 0, -x},
             {0, 1, 0, -y},
             {0, 0, 1, -z},
@@ -122,38 +123,40 @@ vector<vector<double>> camera_rot_m(vector<double> v) {
             { cx*sy*cz + sx*sz, cx*sy*sz - sx*cz, cx*cy }});
 }
 
-vector<vector<int>> project(vector<vector<double>> points, vector<double> translation, vector<double> c_pos, vector<double> c_rot) { // returns vec of point pairs
-    size_t size = points.size();
-    vector<vector<double>> projected_points(size, vector<double>(4, 0));
-    vector<vector<int>> out;
-    for (size_t i = 0; i < size; ++i) {
-        vector<double> ttf = three_to_four(points[i]);
-        vector<double> translated = matrix_mult(translate(translation[0], translation[1], translation[2]), ttf);
-        // convert to camera space (mult with rot^-1 * trans^-1)
-        vector<double> camerad = matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), translate_inv(c_pos[0], c_pos[1], c_pos[2])), translated);
-        projected_points[i] = matrix_mult(projection_m, camerad);
+vector<int> project(vector<double> points, vector<double> c_pos, vector<double> c_rot) { // returns vec of point pairs
+    // points is already converted to vec4
+    vector<double> projected_points(4, 0);
+    vector<int> out;
+    //vector<double> ttf = three_to_four(points[i]);
+    //vector<double> translated = matrix_mult(translate(translation[0], translation[1], translation[2]), ttf);
+    // convert to camera space (mult with rot^-1 * trans^-1)
+    vector<double> camerad = matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), translate_m_inv(c_pos[0], c_pos[1], c_pos[2])), points);
+    projected_points = matrix_mult(projection_m, camerad);
     
-        double x = projected_points[i][0];
-        double y = projected_points[i][1];
-        double z = projected_points[i][2];
-        double w = projected_points[i][3];
-        double xr = double(x)/w, yr = double(y)/w; // x real
-        int xs = floor((xr + 1.0) * IMAGE_WIDTH / 2); // x screen
-        int ys = floor((-yr + 1.0) * IMAGE_HEIGHT / 2); // x screen
-        out.push_back({xs, ys});
-    }
+    double x = projected_points[0];
+    double y = projected_points[1];
+    double z = projected_points[2];
+    double w = projected_points[3];
+    if (w <= 0) return {};
+    double xr = double(x)/w, yr = double(y)/w; // x real
+    int xs = floor((xr + 1.0) * IMAGE_WIDTH / 2); // x screen
+    int ys = floor((-yr + 1.0) * IMAGE_HEIGHT / 2); // x screen
+    out = {xs, ys};
         
     return out;
 
 }
 
-bool offscreen(int x, int y) {
-    return x < 0 || x >= IMAGE_WIDTH || y < 0 || y >= IMAGE_HEIGHT;
+bool offscreen(int x, int y, vector<vector<int>>& canvas) {
+    int h = canvas.size(), w = canvas[0].size();
+    return x < 0 || x >= w || y < 0 || y >= h;
 }
 
-void draw_line(vector<int> a, vector<int> b) { // bresenham's line algo
+void draw_line(vector<int> a, vector<int> b, vector<vector<int>>& canvas) { // bresenham's line algo
+    // -1 is means will make 0 when added
     int x0 = a[0], x1 = b[0], y0 = a[1], y1 = b[1];
     
+
     bool steep = abs(y1 - y0) > abs(x1 - x0);
 
     if (steep) {
@@ -169,19 +172,73 @@ void draw_line(vector<int> a, vector<int> b) { // bresenham's line algo
     int error = dx / 2;
     int ystep = (y0 < y1) ? 1 : -1;
     double D = 2*dy - dx;
-    double y = y0;
+    int y = y0;
 
-    for (double x = x0; x <= x1; ++x) {
-        if (!steep) {
-            if (!offscreen(x, y)) image[y][x] = 1;
-        } else {
-            if (!offscreen(y, x)) image[x][y] = 1;
-        }
+    int h = canvas.size();
+    int w = canvas[0].size();
+    for (int x = x0; x <= x1; ++x) {
+
+        int px = steep ? y : x;
+        int py = steep ? x : y;
+        if (!offscreen(px, py, canvas)) canvas[py][px] = 1;
         
         error -= dy;
         if (error < 0) {
             y += ystep;
             error += dx;
+        }
+    }
+
+    // clip left and right edges
+    int left_top = 0;
+    while (canvas[left_top][0] != 1 && left_top < h-1) left_top++;
+    int left_bottom = h-1;
+    while (canvas[left_bottom][0] != 1 && left_bottom > 0) left_bottom--;
+    int right_top = 0;
+    while (canvas[right_top][w-1] != 1 && right_top < h-1) right_top++;
+    int right_bottom = h-1;
+    while (canvas[right_bottom][w-1] != 1 && right_bottom > 0) right_bottom--;
+    for (int i = left_top; i <= left_bottom; ++i)
+        if (i < h && i > 0) canvas[i][0] = 1;
+    for (int i = right_top; i <= right_bottom; ++i)
+        if (i < h && i > 0) canvas[i][w-1] = 1;
+}
+
+void add_canvas(vector<vector<int>>& out, vector<vector<int>>& part) {// adds part to out
+    size_t h = out.size(), w = out[0].size();
+    for (size_t i = 0; i < h; ++i) {
+        for (size_t j = 0; j < w; ++j) {
+            if (part[i][j] == 1)
+                out[i][j] = 1;
+            else if (part[i][j] == -1)
+                out[i][j] = 0;
+            //out[i][j] = clamp(out[i][j] + part[i][j], 0, 1); // if part has -1, out will be 0
+        }
+    }
+} 
+
+void fill_poly(vector<vector<int>>& out) { // fills space inbetween 1s with -1s
+    size_t h = out.size(), w = out[0].size();
+    for (size_t i = 0; i < h; ++i) {
+        size_t l = 0, r = 0;
+        for (int j = 0; j < w; ++j) {
+            if (out[i][j] == 1) {
+                while (j < w-1 && out[i][j] == 1) ++j;
+                l = j;
+                break;
+            }
+        }
+        for (int j = w-1; j > 0; --j) {
+            if (out[i][j] == 1) {
+                while (j > 0 && out[i][j] == 1) --j;
+                r = j;
+                break;
+            }
+        }
+        if (l < w && r > 0 && l <= r) {
+            for (int j = l; j <= r; ++j) {
+                out[i][j] = -1;
+            }
         }
     }
 }
@@ -192,6 +249,7 @@ void render(vector<vector<int>> image) {
     for (size_t i = 0; i < y_size; ++i) {
         for (size_t j = 0; j < x_size; ++j) {
             if (image[i][j] == 1) {
+                //output += image[i][j] + '0';
                 output += '#';
                 
                 /*
@@ -217,26 +275,121 @@ bool isKeyDown(int k) {
     return GetAsyncKeyState(k) & 0b1000000000000000;
 }
 
-int main() {
-    /*
-    vector<vector<double>> m = {{1,2,3,4},
-                                {5,6,7,8},
-                                {1,2,3,4},
-                                {5,6,7,8}};
-    cout << "og:\n";
-    print_m(m);
-    cout << "inverse:\n";
-    print_m(inverse(m));
-    */
+class Plane { // atm quads with vertical sides
+private:
+    vector<vector<double>> vec;
+    size_t s = 0;
+public:
+    Plane(const vector<vector<double>>& v) : vec{v}, s{vec.size()} {}
+    void draw() {
+        vector<vector<int>> plane_points;
+        vector<vector<int>> plane_canvas {IMAGE_HEIGHT, vector<int>(IMAGE_WIDTH)};
+        for (size_t i = 0; i < s; ++i) {
+            //vector<double> ttf = three_to_four(vec[i]);
+            plane_points.push_back(project(vec[i], camera_pos, camera_rot));
+        }
+        for (size_t i = 0; i < s-1; ++i)
+            draw_line(plane_points[i], plane_points[i+1], plane_canvas);
+        draw_line(plane_points[s-1], plane_points[0], plane_canvas);
 
+        // seems like fill_poly is being applied within each poly but those polys are not occluding on the image canvas
+        fill_poly(plane_canvas);    
+        add_canvas(image, plane_canvas);
+    }
     
+    int compare(const vector<double>& point) { // 1 -> point is on + side of plane, -1 on - side, 0 on plane
+        // assume length >= 3
+        vector<double> a = vec[0], b = vec[1], c = vec[2]; 
+        vector<double> ab = {b[0] - a[0], b[1] - a[1], b[2] - a[2]};
+        vector<double> ac = {c[0] - a[0], c[1] - a[1], c[2] - a[2]};
+        vector<double> cross = {ab[1]*ac[2]-ab[2]*ac[1], ab[2]*ac[0]-ab[0]*ac[2], ab[0]*ac[1]-ab[1]*ac[0]};
+        // sqrt(pow(ab[0] * ac[1], 2) - pow(ab[1] * ac[0], 2));
+        double sum = cross[0]*(point[0]-a[0]) + cross[1]*(point[1]-a[1]) + cross[2]*(point[2]-a[2]);
+        const double EPS = 1e-9;
+        return  (sum > EPS) ? 1 : 
+                (sum < EPS) ? -1 :
+                0;
+    }
+
+    vector<double> point() {
+        return vec[0];
+    }
+    
+};
+
+vector<vector<double>> translate(vector<vector<double>>& points, vector<double> trans) {
+    size_t s = points.size();
+    vector<vector<double>> out;
+    for (size_t i = 0; i < s; ++i) {
+        vector<double> ttf = three_to_four(points[i]);
+        out.push_back(matrix_mult(translate_m(trans[0], trans[1], trans[2]), ttf));
+    }
+    return out;
+}
+
+struct BSP_node {
+    Plane val;
+    BSP_node* lc;
+    BSP_node* rc;
+    BSP_node(Plane p, BSP_node* left, BSP_node* right) : val{p}, lc{left}, rc{right} {};
+};
+
+// each call returns head (random pick out of list), and list of planes still need to be added
+BSP_node* create_BSP_tree(vector<Plane>& planes) {
+    size_t s = planes.size();
+    if (s == 0) return nullptr;
+
+    Plane root = planes[0];
+    // plane chosen as partition is planes[0]
+    vector<Plane> left_tree, right_tree;
+    for (size_t i = 1; i < s; ++i) {
+        if (root.compare(planes[i].point()) < 0)
+            left_tree.push_back(planes[i]);
+        else
+            right_tree.push_back(planes[i]);
+    }
+    
+
+    return new BSP_node(root, create_BSP_tree(left_tree), create_BSP_tree(right_tree)); // choose a plane from which to divide
+}
+
+void draw_painter(BSP_node* plane, const vector<double>& camera) {
+    if (plane == nullptr) return;
+
+    //if (plane->val.compare(camera) <= 0) return;
+    if (plane->val.compare(camera) >= 0) {
+        draw_painter(plane->lc, camera);
+        plane->val.draw();
+        draw_painter(plane->rc, camera);
+    } else {
+        draw_painter(plane->rc, camera);
+        plane->val.draw();
+        draw_painter(plane->lc, camera);
+    }
+}
+
+int main() {    
     cout << "\x1b[2J";
     cout << "\x1b[?25l";
 
     vector<vector<int>> cube_points;
-    vector<double> cube_trans = {0.0, 0.0, 5.0};
     camera_pos = {0, 0, 0};
     camera_rot = {0, 0, 0};
+
+
+    vector<Plane> planes;
+
+    vector<vector<double>> cube_translated = translate(cube, {0.0, 0.0, 5.0});
+        
+    // need to translate points before feed to poly
+    planes.push_back(Plane({cube_translated[0], cube_translated[1], cube_translated[2], cube_translated[3]}));
+    planes.push_back(Plane({cube_translated[4], cube_translated[7], cube_translated[6], cube_translated[5]}));
+    planes.push_back(Plane({cube_translated[0], cube_translated[3], cube_translated[7], cube_translated[4]}));
+    planes.push_back(Plane({cube_translated[0], cube_translated[4], cube_translated[5], cube_translated[1]}));
+    planes.push_back(Plane({cube_translated[1], cube_translated[2], cube_translated[6], cube_translated[5]}));
+    planes.push_back(Plane({cube_translated[3], cube_translated[7], cube_translated[6], cube_translated[2]}));
+        
+    BSP_node* planes_painter = create_BSP_tree(planes);
 
     int s = 0;
     for (int i = 0; i < 1000000; ++i) {
@@ -265,27 +418,8 @@ int main() {
             camera_pos[0] += sin(camera_rot[1])*0.05;
             camera_pos[2] -= cos(camera_rot[1])*0.05;
         }
-        /*
-        if (s == 0) cube_trans = {-3.0+t, 3, 6.0};
-        else if (s == 1) cube_trans = {3.0, 3.0-t, 6.0};
-        else if (s == 2) cube_trans = {3.0-t, -3.0, 6.0};
-        else if (s == 3) cube_trans = {-3.0, -3.0+t, 6.0};
-        */
-        //if (s == 0 || s == 2) {camera_rot = {0, -0.6+t*0.2, 0.0}; camera_pos = {0, -1.2+t*0.4, 5.0};}
-        //else if (s == 1 || s == 3) {camera_rot = {0, 0.6-t*0.2, 0.0}; camera_pos = {0, -1.2+t*0.4, 5.0};}
-        cube_points = project(cube, cube_trans, camera_pos, camera_rot);
-        draw_line(cube_points[0], cube_points[1]);
-        draw_line(cube_points[1], cube_points[2]);
-        draw_line(cube_points[2], cube_points[3]);
-        draw_line(cube_points[3], cube_points[0]);
-        draw_line(cube_points[4], cube_points[5]);
-        draw_line(cube_points[5], cube_points[6]);
-        draw_line(cube_points[6], cube_points[7]);
-        draw_line(cube_points[7], cube_points[4]);
-        draw_line(cube_points[0], cube_points[4]);
-        draw_line(cube_points[1], cube_points[5]);
-        draw_line(cube_points[2], cube_points[6]);
-        draw_line(cube_points[3], cube_points[7]);
+        
+        draw_painter(planes_painter, camera_pos);
         render(image);
         Sleep(10);
     }
