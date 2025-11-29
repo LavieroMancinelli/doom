@@ -2,10 +2,8 @@
 #include <vector>
 #include <string>
 #include <numeric>
-#include <stdexcept>
 #include <cmath>
 #include <windows.h>
-#include <algorithm>
 using namespace std; 
 
 const int IMAGE_HEIGHT = 40;
@@ -14,6 +12,51 @@ vector<vector<int>> image(IMAGE_HEIGHT, vector<int>(IMAGE_WIDTH, 0));
 
 vector<vector<double>> cube = { {-1,-1,-1}, {1,-1,-1}, {1,-1,1}, {-1, -1, 1},
                                 {-1,1,-1}, {1,1,-1}, {1,1,1}, {-1, 1, 1}};
+
+                                
+vector<vector<int>> enemy ={{0,0,0,0,0,0,0,0,0,0,0},
+                            {0,0,0,0,1,1,1,0,0,0,0},
+                            {0,0,1,1,-1,-1,-1,1,1,0,0},
+                            {0,1,-1,-1,-1,-1,-1,-1,-1,1,0},
+                            {1,-1,-1,-1,1,1,1,-1,-1,-1,1},
+                            {1,-1,-1,-1,1,1,1,-1,-1,-1,1},
+                            {0,1,-1,-1,-1,-1,-1,-1,-1,1,0},
+                            {0,0,1,1,-1,-1,-1,1,1,0,0},
+                            {0,0,0,0,1,1,1,0,0,0,0},
+                            {0,0,0,0,0,0,0,0,0,0,0}};
+/*{{0,0,0,0,0,0,0,0,0,0,0,0},
+                            {0,0,0,0,1,1,1,1,0,0,0,0},
+                            {0,0,0,0,1,1,1,1,0,0,0,0},
+                            {0,0,0,1,1,1,1,1,1,1,0,0},
+                            {0,0,1,1,1,1,1,1,1,1,1,0},
+                            {0,1,1,1,1,1,1,1,1,1,1,0},
+                            {0,1,1,0,1,1,1,1,0,0,0,0},
+                            {0,1,1,0,1,1,1,1,0,0,0,0},
+                            {0,0,0,1,1,1,1,1,1,0,0,0},
+                            {0,0,0,1,1,1,1,1,1,0,0,0},
+                            {0,0,0,1,1,0,0,1,1,0,0,0},
+                            {0,0,0,1,1,0,0,1,1,0,0,0} };
+                            */
+/*{{0,0,1,1,1,0,0},
+                            {0,0,1,1,1,0,0},
+                            {0,1,1,1,1,1,0},
+                            {0,1,1,1,1,1,0},
+                            {0,1,1,1,1,1,0},
+                            {0,0,1,0,1,0,0},
+                            {0,0,1,0,1,0,0}};
+                            */
+
+/*{{0,0,0,1,1,1,0,0,0},
+                            {0,0,0,1,1,1,0,0,0},
+                            {0,0,0,0,1,0,0,0,0},
+                            {0,0,1,1,1,1,1,0,0},
+                            {0,1,1,1,1,1,1,1,0},                            
+                            {1,1,0,1,1,1,0,1,1},
+                            {1,0,0,1,1,1,0,0,1},
+                            {0,0,1,1,0,1,1,0,0},                            
+                            {0,0,1,1,0,1,1,0,0},
+                            {0,0,1,1,0,1,1,0,0}};
+                            */
 
 vector<double> three_to_four(vector<double> &v) {
     if (v.size() != 3) throw invalid_argument("Vector must be size 3");
@@ -123,12 +166,10 @@ vector<vector<double>> camera_rot_m(vector<double> v) {
             { cx*sy*cz + sx*sz, cx*sy*sz - sx*cz, cx*cy }});
 }
 
-vector<int> project(vector<double> points, vector<double> c_pos, vector<double> c_rot) { // returns vec of point pairs
+vector<int> project(const vector<double>& points, const vector<double>& c_pos, const vector<double>& c_rot) { // returns vec of point pairs
     // points is already converted to vec4
     vector<double> projected_points(4, 0);
     vector<int> out;
-    //vector<double> ttf = three_to_four(points[i]);
-    //vector<double> translated = matrix_mult(translate(translation[0], translation[1], translation[2]), ttf);
     // convert to camera space (mult with rot^-1 * trans^-1)
     vector<double> camerad = matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), translate_m_inv(c_pos[0], c_pos[1], c_pos[2])), points);
     projected_points = matrix_mult(projection_m, camerad);
@@ -141,7 +182,7 @@ vector<int> project(vector<double> points, vector<double> c_pos, vector<double> 
     double xr = double(x)/w, yr = double(y)/w; // x real
     int xs = floor((xr + 1.0) * IMAGE_WIDTH / 2); // x screen
     int ys = floor((-yr + 1.0) * IMAGE_HEIGHT / 2); // x screen
-    out = {xs, ys};
+    out = {xs, ys, (int)camerad[2]};
         
     return out;
 
@@ -243,9 +284,16 @@ void fill_poly(vector<vector<int>>& out) { // fills space inbetween 1s with -1s
     }
 }
 
-void render(vector<vector<int>> image) {
+void render(vector<vector<int>>& image) {
     size_t y_size = image.size(), x_size = image[0].size();
     string output = "";
+    //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2-1] = '-';
+    //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2-2] = '-';
+    image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2] = '+';
+    //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2+1] = '-';
+    //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2+2] = '-';
+    //image[IMAGE_HEIGHT/2-1][IMAGE_WIDTH/2] = '|';
+    //image[IMAGE_HEIGHT/2+1][IMAGE_WIDTH/2] = '|';
     for (size_t i = 0; i < y_size; ++i) {
         for (size_t j = 0; j < x_size; ++j) {
             if (image[i][j] == 1) {
@@ -260,11 +308,9 @@ void render(vector<vector<int>> image) {
                 else if (image[i-1][j-1] == 1 && image[i+1][j+1] == 1) output += '\\\\';
                 else  output += '-';
                 */
-                
-                
-
             }
-            else output += ' ';
+            else if (image[i][j] == 0) output += ' ';
+            else output += image[i][j];
         }
         output += '\n';
     }
@@ -275,22 +321,57 @@ bool isKeyDown(int k) {
     return GetAsyncKeyState(k) & 0b1000000000000000;
 }
 
+void draw_sprite(vector<int> base, vector<vector<int>>& sprite, vector<vector<int>>& canvas) {
+
+    int x = base[0], y = base[1], z = base[2];
+
+    if (z <= 0) return;
+    double scale = 0.25 / ((double)z / 12); // 5 constant
+    //if (scale < 0.1) return;
+
+    // add scaled h and w
+    size_t sprite_h = sprite.size(), sprite_w = sprite[0].size();
+    
+    size_t scaled_h = sprite_h * scale, scaled_w = sprite_w * scale;
+    for (size_t i = 0; i < scaled_h; ++i) {
+        for (size_t j = 0; j < scaled_w; ++j) {
+            int og_i = i / scale, og_j = j / scale;
+            int py = y - scaled_h / 2 + i, px = x - scaled_w / 2 + j;
+            if (!offscreen(px,py,canvas)) {
+                canvas[py][px] = sprite[og_i][og_j];
+            }
+        }
+    }
+}
+
 class Plane { // atm quads with vertical sides
 private:
     vector<vector<double>> vec;
     size_t s = 0;
+    vector<vector<int>> sprite_image;
 public:
-    Plane(const vector<vector<double>>& v) : vec{v}, s{vec.size()} {}
+    bool is_sprite = false;
+    Plane(const vector<vector<double>>& v, bool is_sprite=false, vector<vector<int>> sprite_image={{}}) : vec{v}, s{vec.size()}, is_sprite{is_sprite}, sprite_image{sprite_image} {};
     void draw() {
         vector<vector<int>> plane_points;
         vector<vector<int>> plane_canvas {IMAGE_HEIGHT, vector<int>(IMAGE_WIDTH)};
+        
+        if(is_sprite) {
+            draw_sprite(project(three_to_four(vec[0]), camera_pos, camera_rot), sprite_image, plane_canvas);
+            add_canvas(image, plane_canvas);
+            return;
+        }
+
         for (size_t i = 0; i < s; ++i) {
-            //vector<double> ttf = three_to_four(vec[i]);
             plane_points.push_back(project(vec[i], camera_pos, camera_rot));
         }
-        for (size_t i = 0; i < s-1; ++i)
+        for (size_t i = 0; i < s-1; ++i) {
+            if (plane_points[i].empty() || plane_points[i+1].empty())
+                continue; // skip this edge
             draw_line(plane_points[i], plane_points[i+1], plane_canvas);
-        draw_line(plane_points[s-1], plane_points[0], plane_canvas);
+        }
+        if (!plane_points[s-1].empty() && !plane_points[0].empty())
+            draw_line(plane_points[s-1], plane_points[0], plane_canvas);
 
         // seems like fill_poly is being applied within each poly but those polys are not occluding on the image canvas
         fill_poly(plane_canvas);    
@@ -299,11 +380,13 @@ public:
     
     int compare(const vector<double>& point) { // 1 -> point is on + side of plane, -1 on - side, 0 on plane
         // assume length >= 3
+        if (is_sprite) return 1;
         vector<double> a = vec[0], b = vec[1], c = vec[2]; 
         vector<double> ab = {b[0] - a[0], b[1] - a[1], b[2] - a[2]};
         vector<double> ac = {c[0] - a[0], c[1] - a[1], c[2] - a[2]};
         vector<double> cross = {ab[1]*ac[2]-ab[2]*ac[1], ab[2]*ac[0]-ab[0]*ac[2], ab[0]*ac[1]-ab[1]*ac[0]};
-        // sqrt(pow(ab[0] * ac[1], 2) - pow(ab[1] * ac[0], 2));
+    
+
         double sum = cross[0]*(point[0]-a[0]) + cross[1]*(point[1]-a[1]) + cross[2]*(point[2]-a[2]);
         const double EPS = 1e-9;
         return  (sum > EPS) ? 1 : 
@@ -311,8 +394,36 @@ public:
                 0;
     }
 
+    int compare_camera(const vector<double>& c_pos, const vector<double>& c_rot) { // 1 -> point is on + side of plane, -1 on - side, 0 on plane
+        if (is_sprite) {
+            return 1;
+            //vector<double> cam = matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), translate_m_inv(c_pos[0], c_pos[1], c_pos[2])), vec[0]);
+            //double z = cam[2];
+            //return (z < 0 ? 1 : -1);
+        }
+        vector<double> a = vec[0], b = vec[1], c = vec[2]; 
+        vector<double> ab = {b[0] - a[0], b[1] - a[1], b[2] - a[2]};
+        vector<double> ac = {c[0] - a[0], c[1] - a[1], c[2] - a[2]};
+        vector<double> cross = {ab[1]*ac[2]-ab[2]*ac[1], ab[2]*ac[0]-ab[0]*ac[2], ab[0]*ac[1]-ab[1]*ac[0]};
+        vector<double> camv = {c_pos[0] - a[0], c_pos[1] - a[1], c_pos[2] - a[2]};
+        double dot = cross[0]*camv[0] + cross[1]*camv[1] + cross[2]*camv[2];
+
+        const double EPS = 1e-9;
+
+        return (dot > EPS) ? 1 :
+            (dot < -EPS ? -1 : 0);
+    }
+
     vector<double> point() {
-        return vec[0];
+        double x=0, y=0, z=0;
+        for (auto& p : vec) {
+            x += p[0];
+            y += p[1];
+            z += p[2];
+        }
+        double s = vec.size();
+        return {x/s, y/s, z/s};
+        //return vec[0];
     }
     
 };
@@ -353,19 +464,25 @@ BSP_node* create_BSP_tree(vector<Plane>& planes) {
     return new BSP_node(root, create_BSP_tree(left_tree), create_BSP_tree(right_tree)); // choose a plane from which to divide
 }
 
-void draw_painter(BSP_node* plane, const vector<double>& camera) {
+void draw_painter(BSP_node* plane, const vector<double>& c_pos, const vector<double>& c_rot) {
     if (plane == nullptr) return;
-
-    //if (plane->val.compare(camera) <= 0) return;
-    if (plane->val.compare(camera) >= 0) {
-        draw_painter(plane->lc, camera);
+    
+    if (plane->val.is_sprite) {
         plane->val.draw();
-        draw_painter(plane->rc, camera);
-    } else {
-        draw_painter(plane->rc, camera);
-        plane->val.draw();
-        draw_painter(plane->lc, camera);
+        return;
     }
+    
+    if (plane->val.compare(c_pos) >= 0) {
+        draw_painter(plane->lc, c_pos, c_rot);
+        //if (plane->val.compare_camera(c_pos, c_rot) > 0)
+        plane->val.draw();
+        draw_painter(plane->rc, c_pos, c_rot);
+    } else {
+        draw_painter(plane->rc, c_pos, c_rot);
+        //if (plane->val.compare_camera(c_pos, c_rot) > 0)
+        plane->val.draw();
+        draw_painter(plane->lc, c_pos, c_rot);
+    }        
 }
 
 int main() {    
@@ -382,13 +499,34 @@ int main() {
     vector<vector<double>> cube_translated = translate(cube, {0.0, 0.0, 5.0});
         
     // need to translate points before feed to poly
+    /*
+    planes.push_back(Plane({cube_translated[3], cube_translated[2], cube_translated[1], cube_translated[0]}));
+    planes.push_back(Plane({cube_translated[4], cube_translated[7], cube_translated[3], cube_translated[0]}));
+    planes.push_back(Plane({cube_translated[5], cube_translated[4], cube_translated[0], cube_translated[1]}));
+    planes.push_back(Plane({cube_translated[6], cube_translated[5], cube_translated[1], cube_translated[2]}));
+    planes.push_back(Plane({cube_translated[7], cube_translated[6], cube_translated[2], cube_translated[3]}));
+    planes.push_back(Plane({cube_translated[4], cube_translated[5], cube_translated[6], cube_translated[7]}));
+    */
+    
     planes.push_back(Plane({cube_translated[0], cube_translated[1], cube_translated[2], cube_translated[3]}));
     planes.push_back(Plane({cube_translated[4], cube_translated[7], cube_translated[6], cube_translated[5]}));
     planes.push_back(Plane({cube_translated[0], cube_translated[3], cube_translated[7], cube_translated[4]}));
     planes.push_back(Plane({cube_translated[0], cube_translated[4], cube_translated[5], cube_translated[1]}));
     planes.push_back(Plane({cube_translated[1], cube_translated[2], cube_translated[6], cube_translated[5]}));
     planes.push_back(Plane({cube_translated[3], cube_translated[7], cube_translated[6], cube_translated[2]}));
-        
+    
+    
+    vector<vector<double>> cube1_translated = translate(cube, {0.0, 0.0, 9.0});
+    planes.push_back(Plane({cube1_translated[0], cube1_translated[1], cube1_translated[2], cube1_translated[3]}));
+    planes.push_back(Plane({cube1_translated[4], cube1_translated[7], cube1_translated[6], cube1_translated[5]}));
+    planes.push_back(Plane({cube1_translated[0], cube1_translated[3], cube1_translated[7], cube1_translated[4]}));
+    planes.push_back(Plane({cube1_translated[0], cube1_translated[4], cube1_translated[5], cube1_translated[1]}));
+    planes.push_back(Plane({cube1_translated[1], cube1_translated[2], cube1_translated[6], cube1_translated[5]}));
+    planes.push_back(Plane({cube1_translated[3], cube1_translated[7], cube1_translated[6], cube1_translated[2]}));
+    
+
+    planes.push_back(Plane({{0.0, 0.0, 7.0}}, true, enemy ));
+
     BSP_node* planes_painter = create_BSP_tree(planes);
 
     int s = 0;
@@ -419,9 +557,9 @@ int main() {
             camera_pos[2] -= cos(camera_rot[1])*0.05;
         }
         
-        draw_painter(planes_painter, camera_pos);
+        draw_painter(planes_painter, camera_pos, camera_rot);
         render(image);
-        Sleep(10);
+        Sleep(11.11); // 90 hz max
     }
         
     return 0;
