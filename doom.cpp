@@ -3,12 +3,18 @@
 #include <string>
 #include <cmath>
 #include <windows.h>
+#include <unordered_map>
 using namespace std; 
 
 const int IMAGE_HEIGHT = 40;
 const int IMAGE_WIDTH = 80;
 int sprites_created = 0;
 vector<vector<int>> image(IMAGE_HEIGHT, vector<int>(IMAGE_WIDTH, 0));
+const int AMMO_MAX = 16;
+int ammo = AMMO_MAX;
+bool reloading = false;
+const int RELOAD_DUR = 32;
+int reload_counter = 0;
 
 vector<vector<double>> cube = { {-1,-1,-1}, {1,-1,-1}, {1,-1,1}, {-1, -1, 1},
                                 {-1,1,-1}, {1,1,-1}, {1,1,1}, {-1, 1, 1}};
@@ -70,6 +76,15 @@ vector<vector<int>> enemy ={{0,0,0,0,0,0,0,0,0,0,0},
 
 Press SPACE to begin
 */
+
+vector<pair<vector<int>, vector<vector<char>>>> ui_elements = {
+    {{IMAGE_HEIGHT-3, IMAGE_WIDTH-17}, 
+       {{'A','M','M','O',':','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0'},
+        {'\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0'}}}
+};
+/*vector<vector<char>> = {{'A','M','M','O',':','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0'},
+                        {'|','|','|','|','|','|','|','|','|','|','|','|','|','|','|','|'}};
+                        */
 vector<double> three_to_four(vector<double> &v) {
     if (v.size() != 3) throw invalid_argument("Vector must be size 3");
     return vector<double>{v[0], v[1], v[2], 1};
@@ -298,7 +313,7 @@ void fill_poly(vector<vector<int>>& out) { // fills space inbetween 1s with -1s
     }
 }
 
-void render(vector<vector<int>>& image) {
+void render(vector<vector<int>>& image, vector<pair<vector<int>, vector<vector<char>>>> &ui_els) {
     size_t y_size = image.size(), x_size = image[0].size();
     string output = "";
     //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2-1] = '-';
@@ -328,6 +343,27 @@ void render(vector<vector<int>>& image) {
             //else output += image[i][j];
         }
         output += '\n';
+    }
+    size_t ui_el_count = ui_els.size();
+    for (size_t u = 0; u < ui_el_count; ++u) {
+        size_t uh = ui_els[u].second.size(), uw = ui_els[u].second[0].size();
+        size_t uy = ui_els[u].first[0], ux = ui_els[u].first[1];
+        for (size_t i = 0; i < uh; ++i) {
+            for (size_t j = 0; j < uw; ++j) {
+                output[((IMAGE_WIDTH + 1) * (uy)) + (ux) // ux and uy
+                     + ((IMAGE_WIDTH + 1) * (i)) + (j) - 1] = ui_els[u].second[i][j];
+            }
+        }
+    }
+    for (int i = 0; i < ammo; ++i) {
+        output[((IMAGE_WIDTH + 1) * (IMAGE_HEIGHT-2)) + (IMAGE_WIDTH-17) // ux and uy
+                     + (i) - 1] = '|';
+    }
+    if (reloading) {
+        for (int i = 0; i < AMMO_MAX; ++i) {
+            output[((IMAGE_WIDTH + 1) * (IMAGE_HEIGHT-2)) + (IMAGE_WIDTH-17) // ux and uy
+                     + (i) - 1] = '-';
+        }
     }
     cout << "\x1b[H" << output;
 }
@@ -498,7 +534,7 @@ void draw_painter(BSP_node* plane, const vector<double>& c_pos, const vector<dou
     
     
     
-    if (plane->val->compare(c_pos) >= 0) {
+    if (plane->val->compare(c_pos) > 0) {
         draw_painter(plane->lc, c_pos, c_rot);
         //if (plane->val.compare_camera(c_pos, c_rot) > 0)
         plane->val->draw();
@@ -598,22 +634,43 @@ int main() {
         
         
         if (isKeyDown(VK_SPACE)) {
-            int hit_pixel = image[IMAGE_HEIGHT/2-1][IMAGE_WIDTH/2];
-            if (hit_pixel > 1) {
-                size_t s = planes.size();
-                cout << hit_pixel << ", " << sprites_created << endl;
-                for (size_t i = 0; i < s; ++i) {
-                    if (planes[i]->is_sprite && planes[i]->sprite_id == hit_pixel / 2 - 1) {
-                        //cout << i << ", " << planes[i]->invis << endl;
-                        planes[i]->invis = true;
+            if (ammo > 0) {
+                int hit_pixel = image[IMAGE_HEIGHT/2-1][IMAGE_WIDTH/2];
+                if (hit_pixel > 1) {
+                    size_t s = planes.size();
+                    //cout << hit_pixel << ", " << sprites_created << endl;
+                    for (size_t i = 0; i < s; ++i) {
+                        if (planes[i]->is_sprite && planes[i]->sprite_id == hit_pixel / 2 - 1) {
+                            //cout << i << ", " << planes[i]->invis << endl;
+                            planes[i]->invis = true;
+                        }
                     }
                 }
+                --ammo;
+            }
+            if (ammo <= 0) {
+                reloading = true;
+                reload_counter = RELOAD_DUR;
+            }
+        }
+
+        if (isKeyDown(0x52)) { // r
+            reloading = true;
+            ammo = 0;
+            reload_counter = RELOAD_DUR;
+        }
+
+        if (reloading) {
+            --reload_counter;
+            if (reload_counter <= 0) {
+                ammo = AMMO_MAX;
+                reloading = false;
             }
         }
         
         for (auto &row : image) fill(row.begin(), row.end(), 0);
         draw_painter(planes_painter, camera_pos, camera_rot);
-        render(image);
+        render(image, ui_elements);
         Sleep(11.11); // 90 hz max
     }
         
