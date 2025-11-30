@@ -1,13 +1,13 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <numeric>
 #include <cmath>
 #include <windows.h>
 using namespace std; 
 
 const int IMAGE_HEIGHT = 40;
 const int IMAGE_WIDTH = 80;
+int sprites_created = 0;
 vector<vector<int>> image(IMAGE_HEIGHT, vector<int>(IMAGE_WIDTH, 0));
 
 vector<vector<double>> cube = { {-1,-1,-1}, {1,-1,-1}, {1,-1,1}, {-1, -1, 1},
@@ -15,14 +15,14 @@ vector<vector<double>> cube = { {-1,-1,-1}, {1,-1,-1}, {1,-1,1}, {-1, -1, 1},
 
                                 
 vector<vector<int>> enemy ={{0,0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,1,1,1,0,0,0,0},
-                            {0,0,1,1,-1,-1,-1,1,1,0,0},
-                            {0,1,-1,-1,-1,-1,-1,-1,-1,1,0},
-                            {1,-1,-1,-1,1,1,1,-1,-1,-1,1},
-                            {1,-1,-1,-1,1,1,1,-1,-1,-1,1},
-                            {0,1,-1,-1,-1,-1,-1,-1,-1,1,0},
-                            {0,0,1,1,-1,-1,-1,1,1,0,0},
-                            {0,0,0,0,1,1,1,0,0,0,0},
+                            {0,0,0,0,3,3,3,0,0,0,0},
+                            {0,0,3,3,2,2,2,3,3,0,0},
+                            {0,3,2,2,2,2,2,2,2,3,0},
+                            {3,2,2,2,3,3,3,2,2,2,3},
+                            {3,2,2,2,3,3,3,2,2,2,3},
+                            {0,3,2,2,2,2,2,2,2,3,0},
+                            {0,0,3,3,2,2,2,3,3,0,0},
+                            {0,0,0,0,3,3,3,0,0,0,0},
                             {0,0,0,0,0,0,0,0,0,0,0}};
 /*{{0,0,0,0,0,0,0,0,0,0,0,0},
                             {0,0,0,0,1,1,1,1,0,0,0,0},
@@ -253,6 +253,8 @@ void add_canvas(vector<vector<int>>& out, vector<vector<int>>& part) {// adds pa
                 out[i][j] = 1;
             else if (part[i][j] == -1)
                 out[i][j] = 0;
+            else if (part[i][j] > 1) // # on enemy
+                out[i][j] = part[i][j];
             //out[i][j] = clamp(out[i][j] + part[i][j], 0, 1); // if part has -1, out will be 0
         }
     }
@@ -289,14 +291,15 @@ void render(vector<vector<int>>& image) {
     string output = "";
     //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2-1] = '-';
     //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2-2] = '-';
-    image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2] = '+';
+    image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2] = -2;
     //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2+1] = '-';
     //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2+2] = '-';
     //image[IMAGE_HEIGHT/2-1][IMAGE_WIDTH/2] = '|';
     //image[IMAGE_HEIGHT/2+1][IMAGE_WIDTH/2] = '|';
     for (size_t i = 0; i < y_size; ++i) {
         for (size_t j = 0; j < x_size; ++j) {
-            if (image[i][j] == 1) {
+            if (image[i][j] < 0) output += '+';
+            else if (image[i][j] == 1 || image[i][j] % 2 == 1) {
                 //output += image[i][j] + '0';
                 output += '#';
                 
@@ -309,8 +312,8 @@ void render(vector<vector<int>>& image) {
                 else  output += '-';
                 */
             }
-            else if (image[i][j] == 0) output += ' ';
-            else output += image[i][j];
+            else if (image[i][j] == 0 || image[i][j] % 2 == 0) output += ' ';
+            //else output += image[i][j];
         }
         output += '\n';
     }
@@ -321,7 +324,7 @@ bool isKeyDown(int k) {
     return GetAsyncKeyState(k) & 0b1000000000000000;
 }
 
-void draw_sprite(vector<int> base, vector<vector<int>>& sprite, vector<vector<int>>& canvas) {
+void draw_sprite(vector<int> base, vector<vector<int>>& sprite, vector<vector<int>>& canvas, int sprite_id) {
 
     int x = base[0], y = base[1], z = base[2];
 
@@ -333,12 +336,13 @@ void draw_sprite(vector<int> base, vector<vector<int>>& sprite, vector<vector<in
     size_t sprite_h = sprite.size(), sprite_w = sprite[0].size();
     
     size_t scaled_h = sprite_h * scale, scaled_w = sprite_w * scale;
+    int key = (sprites_created-1)*2;
     for (size_t i = 0; i < scaled_h; ++i) {
         for (size_t j = 0; j < scaled_w; ++j) {
             int og_i = i / scale, og_j = j / scale;
             int py = y - scaled_h / 2 + i, px = x - scaled_w / 2 + j;
             if (!offscreen(px,py,canvas)) {
-                canvas[py][px] = sprite[og_i][og_j];
+                canvas[py][px] = sprite[og_i][og_j] + key;
             }
         }
     }
@@ -350,15 +354,19 @@ private:
     size_t s = 0;
     vector<vector<int>> sprite_image;
 public:
-    bool is_sprite = false;
-    Plane(const vector<vector<double>>& v, bool is_sprite=false, vector<vector<int>> sprite_image={{}}) : vec{v}, s{vec.size()}, is_sprite{is_sprite}, sprite_image{sprite_image} {};
+    bool is_sprite;
+    int sprite_id;
+    bool invis;
+    Plane(const vector<vector<double>>& v, bool is_sprite=false, vector<vector<int>> sprite_image={{}}, int sprite_id=sprites_created, bool invis=false) : vec{v}, s{vec.size()}, is_sprite{is_sprite}, sprite_image{sprite_image}, sprite_id{sprite_id}, invis{invis} {sprites_created += is_sprite;};
     void draw() {
         vector<vector<int>> plane_points;
         vector<vector<int>> plane_canvas {IMAGE_HEIGHT, vector<int>(IMAGE_WIDTH)};
         
         if(is_sprite) {
-            draw_sprite(project(three_to_four(vec[0]), camera_pos, camera_rot), sprite_image, plane_canvas);
-            add_canvas(image, plane_canvas);
+            if (!invis) {
+                draw_sprite(project(three_to_four(vec[0]), camera_pos, camera_rot), sprite_image, plane_canvas, sprite_id);
+                add_canvas(image, plane_canvas);
+            }
             return;
         }
 
@@ -425,6 +433,15 @@ public:
         return {x/s, y/s, z/s};
         //return vec[0];
     }
+
+    bool operator==(const Plane& other) const {
+        bool same = true;
+        if (s != other.s) return false;
+        for (size_t i = 0; i < s; ++i) {
+            if (vec[i] != other.vec[i]) return false;
+        }
+        return same;
+    }
     
 };
 
@@ -439,22 +456,22 @@ vector<vector<double>> translate(vector<vector<double>>& points, vector<double> 
 }
 
 struct BSP_node {
-    Plane val;
+    Plane* val;
     BSP_node* lc;
     BSP_node* rc;
-    BSP_node(Plane p, BSP_node* left, BSP_node* right) : val{p}, lc{left}, rc{right} {};
+    BSP_node(Plane* p, BSP_node* left, BSP_node* right) : val{p}, lc{left}, rc{right} {};
 };
 
 // each call returns head (random pick out of list), and list of planes still need to be added
-BSP_node* create_BSP_tree(vector<Plane>& planes) {
+BSP_node* create_BSP_tree(vector<Plane*>& planes) {
     size_t s = planes.size();
     if (s == 0) return nullptr;
 
-    Plane root = planes[0];
+    Plane* root = planes[0];
     // plane chosen as partition is planes[0]
-    vector<Plane> left_tree, right_tree;
+    vector<Plane*> left_tree, right_tree;
     for (size_t i = 1; i < s; ++i) {
-        if (root.compare(planes[i].point()) < 0)
+        if (root->compare(planes[i]->point()) < 0)
             left_tree.push_back(planes[i]);
         else
             right_tree.push_back(planes[i]);
@@ -467,38 +484,38 @@ BSP_node* create_BSP_tree(vector<Plane>& planes) {
 void draw_painter(BSP_node* plane, const vector<double>& c_pos, const vector<double>& c_rot) {
     if (plane == nullptr) return;
     
-    if (plane->val.is_sprite) {
-        plane->val.draw();
+    if (plane->val->is_sprite) {
+        plane->val->draw();
         return;
     }
     
-    if (plane->val.compare(c_pos) >= 0) {
+    if (plane->val->compare(c_pos) >= 0) {
         draw_painter(plane->lc, c_pos, c_rot);
         //if (plane->val.compare_camera(c_pos, c_rot) > 0)
-        plane->val.draw();
+        plane->val->draw();
         draw_painter(plane->rc, c_pos, c_rot);
     } else {
         draw_painter(plane->rc, c_pos, c_rot);
         //if (plane->val.compare_camera(c_pos, c_rot) > 0)
-        plane->val.draw();
+        plane->val->draw();
         draw_painter(plane->lc, c_pos, c_rot);
     }        
 }
+
 
 int main() {    
     cout << "\x1b[2J";
     cout << "\x1b[?25l";
 
     vector<vector<int>> cube_points;
-    camera_pos = {0, 0, 0};
-    camera_rot = {0, 0, 0};
+    camera_pos = {0.0, 0.0, 0.0};
+    camera_rot = {0.0, 0.0, 0.0};
 
 
-    vector<Plane> planes;
+    vector<Plane*> planes;
 
     vector<vector<double>> cube_translated = translate(cube, {0.0, 0.0, 5.0});
         
-    // need to translate points before feed to poly
     /*
     planes.push_back(Plane({cube_translated[3], cube_translated[2], cube_translated[1], cube_translated[0]}));
     planes.push_back(Plane({cube_translated[4], cube_translated[7], cube_translated[3], cube_translated[0]}));
@@ -508,32 +525,31 @@ int main() {
     planes.push_back(Plane({cube_translated[4], cube_translated[5], cube_translated[6], cube_translated[7]}));
     */
     
-    planes.push_back(Plane({cube_translated[0], cube_translated[1], cube_translated[2], cube_translated[3]}));
-    planes.push_back(Plane({cube_translated[4], cube_translated[7], cube_translated[6], cube_translated[5]}));
-    planes.push_back(Plane({cube_translated[0], cube_translated[3], cube_translated[7], cube_translated[4]}));
-    planes.push_back(Plane({cube_translated[0], cube_translated[4], cube_translated[5], cube_translated[1]}));
-    planes.push_back(Plane({cube_translated[1], cube_translated[2], cube_translated[6], cube_translated[5]}));
-    planes.push_back(Plane({cube_translated[3], cube_translated[7], cube_translated[6], cube_translated[2]}));
+    planes.push_back(new Plane({cube_translated[0], cube_translated[1], cube_translated[2], cube_translated[3]}));
+    planes.push_back(new Plane({cube_translated[4], cube_translated[7], cube_translated[6], cube_translated[5]}));
+    planes.push_back(new Plane({cube_translated[0], cube_translated[3], cube_translated[7], cube_translated[4]}));
+    planes.push_back(new Plane({cube_translated[0], cube_translated[4], cube_translated[5], cube_translated[1]}));
+    planes.push_back(new Plane({cube_translated[1], cube_translated[2], cube_translated[6], cube_translated[5]}));
+    planes.push_back(new Plane({cube_translated[3], cube_translated[7], cube_translated[6], cube_translated[2]}));
     
     
     vector<vector<double>> cube1_translated = translate(cube, {0.0, 0.0, 9.0});
-    planes.push_back(Plane({cube1_translated[0], cube1_translated[1], cube1_translated[2], cube1_translated[3]}));
-    planes.push_back(Plane({cube1_translated[4], cube1_translated[7], cube1_translated[6], cube1_translated[5]}));
-    planes.push_back(Plane({cube1_translated[0], cube1_translated[3], cube1_translated[7], cube1_translated[4]}));
-    planes.push_back(Plane({cube1_translated[0], cube1_translated[4], cube1_translated[5], cube1_translated[1]}));
-    planes.push_back(Plane({cube1_translated[1], cube1_translated[2], cube1_translated[6], cube1_translated[5]}));
-    planes.push_back(Plane({cube1_translated[3], cube1_translated[7], cube1_translated[6], cube1_translated[2]}));
+    planes.push_back(new Plane({cube1_translated[0], cube1_translated[1], cube1_translated[2], cube1_translated[3]}));
+    planes.push_back(new Plane({cube1_translated[4], cube1_translated[7], cube1_translated[6], cube1_translated[5]}));
+    planes.push_back(new Plane({cube1_translated[0], cube1_translated[3], cube1_translated[7], cube1_translated[4]}));
+    planes.push_back(new Plane({cube1_translated[0], cube1_translated[4], cube1_translated[5], cube1_translated[1]}));
+    planes.push_back(new Plane({cube1_translated[1], cube1_translated[2], cube1_translated[6], cube1_translated[5]}));
+    planes.push_back(new Plane({cube1_translated[3], cube1_translated[7], cube1_translated[6], cube1_translated[2]}));
     
 
-    planes.push_back(Plane({{0.0, 0.0, 7.0}}, true, enemy ));
+    planes.push_back(new Plane({{0.0, 0.0, 7.0}}, true, enemy, sprites_created, false));
 
     BSP_node* planes_painter = create_BSP_tree(planes);
 
     int s = 0;
     for (int i = 0; i < 1000000; ++i) {
-        int t = i % 6;
-        if (i % 6 == 0) s = (s+1) % 4;
-        for (auto &row : image) fill(row.begin(), row.end(), 0);
+        //int t = i % 6;
+        //if (i % 6 == 0) s = (s+1) % 4;
 
         if (isKeyDown(VK_LEFT))
             camera_rot[1] += 0.03;
@@ -557,6 +573,21 @@ int main() {
             camera_pos[2] -= cos(camera_rot[1])*0.05;
         }
         
+        
+        if (isKeyDown(VK_SPACE)) {
+            int hit_pixel = image[IMAGE_HEIGHT/2-1][IMAGE_WIDTH/2];
+            if (hit_pixel > 1) {
+                size_t s = planes.size();
+                for (size_t i = 0; i < s; ++i) {
+                    if (planes[i]->is_sprite && planes[i]->sprite_id == hit_pixel / 2 - 1) {
+                        //cout << i << ", " << planes[i]->invis << endl;
+                        planes[i]->invis = true;
+                    }
+                }
+            }
+        }
+        
+        for (auto &row : image) fill(row.begin(), row.end(), 0);
         draw_painter(planes_painter, camera_pos, camera_rot);
         render(image);
         Sleep(11.11); // 90 hz max
