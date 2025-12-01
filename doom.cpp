@@ -10,14 +10,18 @@ const int IMAGE_HEIGHT = 40;
 const int IMAGE_WIDTH = 80;
 int sprites_created = 0;
 vector<vector<int>> image(IMAGE_HEIGHT, vector<int>(IMAGE_WIDTH, 0));
-const int AMMO_MAX = 16;
+const int AMMO_MAX = 32;
 int ammo = AMMO_MAX;
 bool reloading = false;
 const int RELOAD_DUR = 32;
 int reload_counter = 0;
+const double COLLISION_DISTANCE = 1.5;
+const double MOVE_SPEED = 0.05;
+const int FRAMERATE = 90;
+const double FRAME_DUR = 1000/FRAMERATE;
 
-vector<vector<double>> cube = { {-1,-1,-1}, {1,-1,-1}, {1,-1,1}, {-1, -1, 1},
-                                {-1,1,-1}, {1,1,-1}, {1,1,1}, {-1, 1, 1}};
+vector<vector<double>> cube = { {-1,-1,-3}, {1,-1,-3}, {1,-1,1}, {-1, -1, 1},
+                                {-1,1,-3}, {1,1,-3}, {1,1,1}, {-1, 1, 1}};
 
                                 
 vector<vector<int>> enemy ={{0,0,0,0,0,0,0,0,0,0,0},
@@ -64,15 +68,16 @@ vector<vector<int>> enemy ={{0,0,0,0,0,0,0,0,0,0,0},
                             {0,0,1,1,0,1,1,0,0}};
                             */
 /*
-/----------------------------------------\
-|                                        |
-|   ####    ###    ###   #   #           |
-|   #   #  #   #  #   #  ## ##           |
-|   #   #  #   #  #   #  # # #           |
-|   ####    ###    ###   #   # at home   |
-|                                        |
-|         by Laviero Mancinelli          |
-\----------------------------------------/
++----------------------------------------------+
+|   #####    ####    ####   ##   ##            |
+|   ######  ######  ######  ### ###            |
+|   ##  ##  ##  ##  ##  ##  #######            |
+|   ##  ##  ##  ##  ##  ##  ## # ##            |
+|   ######  ######  ######  ##   ##            |
+|   #####    ####    ####   ##   ##  at home   |
+|                                              |
+|   by Laviero Mancinelli                      |
++----------------------------------------------+
 
 Press SPACE to begin
 */
@@ -193,23 +198,33 @@ vector<vector<double>> camera_rot_m(vector<double> v) {
             { cx*sy*cz + sx*sz, cx*sy*sz - sx*cz, cx*cy }});
 }
 
-vector<int> project(const vector<double>& points, const vector<double>& c_pos, const vector<double>& c_rot) { // returns vec of point pairs
+
+vector<int> project(const vector<double>& points, double cam_z) { // returns vec of point pairs
     // points is already converted to vec4
     vector<double> projected_points(4, 0);
     vector<int> out;
-    // convert to camera space (mult with rot^-1 * trans^-1)
-    vector<double> camerad = matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), translate_m_inv(c_pos[0], c_pos[1], c_pos[2])), points);
-    projected_points = matrix_mult(projection_m, camerad);
+    // convert to camera space (mult with rot^-1 * trans^-1) vvv moved to draw so can add clipping
+    //vector<double> camerad = matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), translate_m_inv(c_pos[0], c_pos[1], c_pos[2])), points);
+    projected_points = matrix_mult(projection_m, points);
     
     double x = projected_points[0];
     double y = projected_points[1];
     double z = projected_points[2];
     double w = projected_points[3];
     if (w <= 0) return {};
+    if (!isfinite(x) || !isfinite(y) || !isfinite(w)) return {};
+
     double xr = double(x)/w, yr = double(y)/w; // x real
+    if (!isfinite(xr) || !isfinite(yr)) return {};
+    long long xs_ll = (long long)floor((xr + 1.0) * IMAGE_WIDTH / 2);
+    long long ys_ll = (long long)floor((-yr + 1.0) * IMAGE_HEIGHT / 2);
+    // clamp to a reasonable range
+    const long long MAX_COORD = 1'000'000;
+    if (llabs(xs_ll) > MAX_COORD || llabs(ys_ll) > MAX_COORD) return {};
+
     int xs = floor((xr + 1.0) * IMAGE_WIDTH / 2); // x screen
     int ys = floor((-yr + 1.0) * IMAGE_HEIGHT / 2); // x screen
-    out = {xs, ys, (int)camerad[2]};
+    out = {xs, ys, (int)cam_z};
         
     return out;
 
@@ -355,12 +370,12 @@ void render(vector<vector<int>>& image, vector<pair<vector<int>, vector<vector<c
             }
         }
     }
-    for (int i = 0; i < ammo; ++i) {
+    for (int i = 0; i < ammo/2; ++i) {
         output[((IMAGE_WIDTH + 1) * (IMAGE_HEIGHT-2)) + (IMAGE_WIDTH-17) // ux and uy
                      + (i) - 1] = '|';
     }
     if (reloading) {
-        for (int i = 0; i < AMMO_MAX; ++i) {
+        for (int i = 0; i < AMMO_MAX/2; ++i) {
             output[((IMAGE_WIDTH + 1) * (IMAGE_HEIGHT-2)) + (IMAGE_WIDTH-17) // ux and uy
                      + (i) - 1] = '-';
         }
@@ -396,31 +411,91 @@ void draw_sprite(vector<int> base, vector<vector<int>>& sprite, vector<vector<in
     }
 }
 
+vector<vector<double>> clip_poly(const vector<vector<double>> &points, double near_clip = 0.0) { // Sutherland Hodgman
+    vector<vector<double>> out;
+    size_t s = points.size();
+
+    const double EPS_DENOM = 1e-12;
+    for (size_t i = 0; i < s; ++i) {
+        const vector<double> &vertA = points[i], &vertB = points[(i + 1) % s];
+
+        vector<double> A = vertA, B = vertB;
+        if (A.size() < 4) {A.resize(4); A[3] = 1.0;}
+        if (B.size() < 4) {B.resize(4); B[3] = 1.0;}
+
+        double aZ = A[2], bZ = B[2];
+        bool aIn = aZ >= near_clip, bIn = bZ >= near_clip;
+
+        if (aIn && bIn) {
+            if (out.empty() || out.back() != B) out.push_back(B);
+        } else if (aIn) {
+            double denom = (bZ - aZ);
+            if (abs(denom) > EPS_DENOM) {
+                double t = (near_clip - aZ) / denom;
+                vector<double> I = A;
+                for (size_t i = 0; i < A.size(); ++i) I[i] = A[i] + t * (B[i]-A[i]);
+                if (out.empty() || out.back() != I) out.push_back(I);
+            }
+        } else if (bIn) {
+            double denom = (bZ - aZ);
+            if (abs(denom) > EPS_DENOM) {
+                double t = (near_clip - aZ) / denom;
+                vector<double> I = A;
+                for (size_t i = 0; i < A.size(); ++i) I[i] = A[i] + t * (B[i]-A[i]);
+                if (out.empty() || out.back() != I) out.push_back(I);
+                if (out.empty() || out.back() != B) out.push_back(B);
+            } else {
+                if (out.empty() || out.back() != B) out.push_back(B);
+            }
+        }
+
+    }
+
+    return out;
+}
+
 class Plane { // atm quads with vertical sides
 private:
-    vector<vector<double>> vec;
-    size_t s = 0;
     vector<vector<int>> sprite_image;
 public:
+    vector<vector<double>> vec;
     bool is_sprite;
     int sprite_id;
     bool invis;
-    Plane(const vector<vector<double>>& v, bool is_sprite=false, vector<vector<int>> sprite_image={{}}, int sprite_id=sprites_created, bool invis=false) : vec{v}, s{vec.size()}, is_sprite{is_sprite}, sprite_image{sprite_image}, sprite_id{sprite_id}, invis{invis} {sprites_created += is_sprite;};
+    Plane(const vector<vector<double>>& v, bool is_sprite=false, vector<vector<int>> sprite_image={{}}, int sprite_id=sprites_created, bool invis=false) : vec{v}, is_sprite{is_sprite}, sprite_image{sprite_image}, sprite_id{sprite_id}, invis{invis} {sprites_created += is_sprite;};
     void draw() {
         vector<vector<int>> plane_points;
         vector<vector<int>> plane_canvas {IMAGE_HEIGHT, vector<int>(IMAGE_WIDTH)};
         
+        
         if(is_sprite) {
             if (!invis) {
-                draw_sprite(project(three_to_four(vec[0]), camera_pos, camera_rot), sprite_image, plane_canvas, sprite_id);
+                vector<double> camerad = matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), translate_m_inv(camera_pos[0], camera_pos[1], camera_pos[2])), three_to_four(vec[0]));
+                if (camerad[2] < 0.01) return;
+                draw_sprite(project(camerad, camerad[2]), sprite_image, plane_canvas, sprite_id);
                 add_canvas(image, plane_canvas);
             }
             return;
         }
-
-        for (size_t i = 0; i < s; ++i) {
-            plane_points.push_back(project(vec[i], camera_pos, camera_rot));
+        vector<vector<double>> camerad;
+        for (size_t i = 0; i < vec.size(); ++i)
+            camerad.push_back(matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), translate_m_inv(camera_pos[0], camera_pos[1], camera_pos[2])), vec[i]));
+        
+        vector<vector<double>> clipped = clip_poly(camerad, 0.05);
+        for (auto &v : clipped) {
+            if (v.size() < 4) {
+                v.resize(4);
+                v[3] = 1.0;
+            }
         }
+
+        size_t s = clipped.size();
+        if (s < 3) return;
+        for (auto &v : clipped) {
+            if (v.size() < 4) v.resize(4, 1.0);
+        }
+        for (size_t i = 0; i < s; ++i)
+            plane_points.push_back(project(clipped[i], clipped[i][2]));
         for (size_t i = 0; i < s-1; ++i) {
             if (plane_points[i].empty() || plane_points[i+1].empty())
                 continue; // skip this edge
@@ -484,7 +559,8 @@ public:
 
     bool operator==(const Plane& other) const {
         bool same = true;
-        if (s != other.s) return false;
+        size_t s = vec.size();
+        if (s != other.vec.size()) return false;
         for (size_t i = 0; i < s; ++i) {
             if (vec[i] != other.vec[i]) return false;
         }
@@ -503,12 +579,16 @@ vector<vector<double>> translate(vector<vector<double>>& points, vector<double> 
     return out;
 }
 
+
+
 struct BSP_node {
     Plane* val;
     BSP_node* lc;
     BSP_node* rc;
     BSP_node(Plane* p, BSP_node* left, BSP_node* right) : val{p}, lc{left}, rc{right} {};
 };
+
+
 
 // each call returns head (random pick out of list), and list of planes still need to be added
 BSP_node* create_BSP_tree(vector<Plane*>& planes) {
@@ -534,16 +614,12 @@ void draw_painter(BSP_node* plane, const vector<double>& c_pos, const vector<dou
     
     
     
-    if (plane->val->compare(c_pos) > 0) {
+    if (plane->val->compare(c_pos) >= 0) {
         draw_painter(plane->lc, c_pos, c_rot);
         //if (plane->val.compare_camera(c_pos, c_rot) > 0)
         plane->val->draw();
         draw_painter(plane->rc, c_pos, c_rot);
     } else {
-        //if (plane->val->is_sprite) {
-        //    plane->val->draw();
-        //return;
-        //}
         draw_painter(plane->rc, c_pos, c_rot);
         //if (plane->val.compare_camera(c_pos, c_rot) > 0)
         plane->val->draw();
@@ -559,6 +635,35 @@ void waitOnMenu() {
     }
 }
 
+bool checkCollision(double x, double z, vector<Plane*> col_planes) {
+    size_t s = col_planes.size();
+    for (size_t i = 0; i < s; ++i) { // plane
+        Plane* p = col_planes[i];
+        size_t sp = p->vec.size();
+        for (size_t j = 0; j < sp; ++j) { // edge
+            vector<double> vertA, vertB;
+            vertA = p->vec[j];
+            vertB = p->vec[(j+1) % s]; 
+
+            double ABx = vertB[0] - vertA[0], ABz = vertB[2] - vertA[2];
+            double APx = x - vertA[0], APz = z - vertA[2];
+            double ABlen = pow(ABx, 2) + pow(ABz, 2);
+            if (ABlen == 0) return sqrt(pow(APx, 2) + pow(APz, 2)) >= COLLISION_DISTANCE; // A and B the same point
+
+            double t = (pow(APx, 2) + pow(APz, 2)) / ABlen;
+
+            double dist;
+            if (t < 0) dist = sqrt(pow(x-vertA[0], 2) + pow(z-vertA[2], 2)); // point closest to A
+            else if (t > 1) dist = sqrt(pow(x-vertB[0], 2) + pow(z-vertB[2], 2)); // point closest to B
+            else dist = sqrt(pow(x-(vertA[0]+t*ABx), 2) + pow(z-(vertA[2]+t*ABz), 2)); // point closest to interior
+            
+            if (dist < COLLISION_DISTANCE) // minimum distance
+                return false;
+        }
+    }
+    return true;
+}
+
 int main() {    
     cout << "\x1b[2J";
     cout << "\x1b[?25l";
@@ -569,6 +674,7 @@ int main() {
 
 
     vector<Plane*> planes;
+    vector<Plane*> collision_planes;
 
     vector<vector<double>> cube_translated = translate(cube, {-4.0, 0.0, 3.0});
         
@@ -581,8 +687,9 @@ int main() {
     planes.push_back(Plane({cube_translated[4], cube_translated[5], cube_translated[6], cube_translated[7]}));
     */
     
-    
-    planes.push_back(new Plane({cube_translated[0], cube_translated[1], cube_translated[2], cube_translated[3]}));
+    Plane* cp0 = new Plane({cube_translated[0], cube_translated[1], cube_translated[2], cube_translated[3]});
+    collision_planes.push_back(cp0);
+    planes.push_back(cp0);
     planes.push_back(new Plane({cube_translated[4], cube_translated[7], cube_translated[6], cube_translated[5]}));
     planes.push_back(new Plane({cube_translated[0], cube_translated[3], cube_translated[7], cube_translated[4]}));
     planes.push_back(new Plane({cube_translated[0], cube_translated[4], cube_translated[5], cube_translated[1]}));
@@ -591,7 +698,9 @@ int main() {
     
     
     vector<vector<double>> cube1_translated = translate(cube, {4.0, 0.0, 3.0});
-    planes.push_back(new Plane({cube1_translated[0], cube1_translated[1], cube1_translated[2], cube1_translated[3]}));
+    Plane* cp1 = new Plane({cube1_translated[0], cube1_translated[1], cube1_translated[2], cube1_translated[3]});
+    collision_planes.push_back(cp1);
+    planes.push_back(cp1);
     planes.push_back(new Plane({cube1_translated[4], cube1_translated[7], cube1_translated[6], cube1_translated[5]}));
     planes.push_back(new Plane({cube1_translated[0], cube1_translated[3], cube1_translated[7], cube1_translated[4]}));
     planes.push_back(new Plane({cube1_translated[0], cube1_translated[4], cube1_translated[5], cube1_translated[1]}));
@@ -605,8 +714,12 @@ int main() {
 
     BSP_node* planes_painter = create_BSP_tree(planes);
 
+    
     int s = 0;
-    for (int i = 0; i < 1000000; ++i) {
+    while (1) {
+        LARGE_INTEGER t_start, t_end, t_freq;
+        QueryPerformanceFrequency(&t_freq);
+        QueryPerformanceCounter(&t_start);
         //int t = i % 6;
         //if (i % 6 == 0) s = (s+1) % 4;
 
@@ -614,22 +727,40 @@ int main() {
             camera_rot[1] += 0.03;
         if (isKeyDown(VK_RIGHT))
             camera_rot[1] -= 0.03;
+            
+            
         if (isKeyDown(0x41)) { // a
-            camera_pos[0] -= cos(camera_rot[1])*0.05;
-            camera_pos[2] -= sin(camera_rot[1])*0.05;
+            double x = cos(camera_rot[1])*MOVE_SPEED;
+            double z = sin(camera_rot[1])*MOVE_SPEED;
+            if (checkCollision(camera_pos[0]-x, camera_pos[2]-z, collision_planes)) {
+                camera_pos[0] -= x;
+                camera_pos[2] -= z;
+            }
         }
         if (isKeyDown(0x44)) { // d
-            camera_pos[0] += cos(camera_rot[1])*0.05;
-            camera_pos[2] += sin(camera_rot[1])*0.05;
+            double x = cos(camera_rot[1])*MOVE_SPEED;
+            double z = sin(camera_rot[1])*MOVE_SPEED;
+            if (checkCollision(camera_pos[0]+x, camera_pos[2]+z, collision_planes)) {
+                camera_pos[0] += x;
+                camera_pos[2] += z;
+            }
         }
             
         if (isKeyDown(0x57)) { // w
-            camera_pos[0] -= sin(camera_rot[1])*0.05;
-            camera_pos[2] += cos(camera_rot[1])*0.05;
+            double x = sin(camera_rot[1])*MOVE_SPEED;
+            double z = cos(camera_rot[1])*MOVE_SPEED;
+            if (checkCollision(camera_pos[0]-x, camera_pos[2]+z, collision_planes)) {
+                camera_pos[0] -= x;
+                camera_pos[2] += z;
+            }
         }
         if (isKeyDown(0x53)) {// s
-            camera_pos[0] += sin(camera_rot[1])*0.05;
-            camera_pos[2] -= cos(camera_rot[1])*0.05;
+            double x = sin(camera_rot[1])*MOVE_SPEED;
+            double z = cos(camera_rot[1])*MOVE_SPEED;
+            if (checkCollision(camera_pos[0]+x, camera_pos[2]-z, collision_planes)) {
+                camera_pos[0] += x;
+                camera_pos[2] -= z;
+            }
         }
         
         
@@ -671,8 +802,12 @@ int main() {
         for (auto &row : image) fill(row.begin(), row.end(), 0);
         draw_painter(planes_painter, camera_pos, camera_rot);
         render(image, ui_elements);
-        Sleep(11.11); // 90 hz max
+
+    
+        QueryPerformanceCounter(&t_end);
+        double t_delta = (double)(t_end.QuadPart - t_start.QuadPart) * 1000.0 / t_freq.QuadPart;
+
+        Sleep(max(FRAME_DUR-t_delta, 0.0)); // 90 hz max
     }
-        
     return 0;
 }
