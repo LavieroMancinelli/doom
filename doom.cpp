@@ -23,6 +23,7 @@ const int FRAMERATE = 90;
 const double FRAME_DUR = 1000/FRAMERATE;
 const double SPRITE_SCALE = 1.0;
 const double FOCAL_LENGTH = 1.0;
+const double NEAR_PLANE = 0.05;
 
 vector<vector<double>> cube = { {-1,-1,-3}, {1,-1,-3}, {1,-1,1}, {-1, -1, 1},
                                 {-1,1,-3}, {1,1,-3}, {1,1,1}, {-1, 1, 1}};
@@ -303,7 +304,6 @@ vector<vector<double>> projection_m = {{FOCAL_LENGTH, 0, 0, 0},
                                     {0, FOCAL_LENGTH, 0, 0},
                                     {0, 0, 1, 1},
                                     {0, 0, 1, 0}};
-
 
 vector<double> inverse(vector<int> v) {
     vector<double> out;
@@ -681,7 +681,7 @@ public:
         for (size_t i = 0; i < vec.size(); ++i)
             camerad.push_back(matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), translate_m_inv(camera_pos[0], camera_pos[1], camera_pos[2])), vec[i]));
         
-        vector<vector<double>> clipped = clip_poly(camerad, 0.05);
+        vector<vector<double>> clipped = clip_poly(camerad, NEAR_PLANE);
         for (auto &v : clipped) {
             if (v.size() < 4) {
                 v.resize(4);
@@ -769,6 +769,7 @@ public:
     
 };
 
+
 vector<vector<double>> translate(vector<vector<double>>& points, vector<double> trans) {
     size_t s = points.size();
     vector<vector<double>> out;
@@ -809,27 +810,41 @@ BSP_node* create_BSP_tree(vector<Plane*>& planes) {
     return new BSP_node(root, create_BSP_tree(left_tree), create_BSP_tree(right_tree)); // choose a plane from which to divide
 }
 
-void draw_painter(BSP_node* plane, const vector<double>& c_pos, const vector<double>& c_rot) {
-    if (plane == nullptr) return;
+void draw_painter(BSP_node* node, const vector<double>& c_pos, vector<Plane*>& sprites) {
+    if (node == nullptr) return;
+
+    vector<Plane*> back, front;
+
+    for (auto& s : sprites) {
+        if (node->val->compare(s->vec[0]) < 0)
+            back.push_back(s);
+        else 
+            front.push_back(s);
+    }
     
     
     
-    if (plane->val->compare(c_pos) >= 0) {
-        draw_painter(plane->lc, c_pos, c_rot);
-        //if (plane->val.compare_camera(c_pos, c_rot) > 0)
-        plane->val->draw();
-        draw_painter(plane->rc, c_pos, c_rot);
+    if (node->val->compare(c_pos) >= 0) {
+        draw_painter(node->lc, c_pos, back);
+        for (auto& s : back)
+            s->draw();
+        node->val->draw();
+        for (auto& s : front)
+            s->draw();
+        draw_painter(node->rc, c_pos, front);
     } else {
-        draw_painter(plane->rc, c_pos, c_rot);
-        //if (plane->val.compare_camera(c_pos, c_rot) > 0)
-        plane->val->draw();
-        draw_painter(plane->lc, c_pos, c_rot);
+        draw_painter(node->rc, c_pos, front);
+        for (auto& s : front)
+            s->draw();
+        node->val->draw();
+        for (auto& s : back)
+            s->draw();
+        draw_painter(node->lc, c_pos, back);
     }        
 }
 
 void waitOnMenu() {
     while(1) {
-        
         if (isKeyDown(VK_SPACE))
             return;
     }
@@ -875,6 +890,7 @@ int main() {
 
     vector<Plane*> planes;
     vector<Plane*> collision_planes;
+    vector<Plane*> sprites;
 
     vector<vector<double>> cube_translated = translate(cube, {-4.0, 0.0, 3.0});
         
@@ -887,6 +903,7 @@ int main() {
     planes.push_back(Plane({cube_translated[4], cube_translated[5], cube_translated[6], cube_translated[7]}));
     */
     
+    /*
     Plane* cp0 = new Plane({cube_translated[0], cube_translated[1], cube_translated[2], cube_translated[3]});
     collision_planes.push_back(cp0);
     planes.push_back(cp0);
@@ -906,11 +923,25 @@ int main() {
     planes.push_back(new Plane({cube1_translated[0], cube1_translated[4], cube1_translated[5], cube1_translated[1]}));
     planes.push_back(new Plane({cube1_translated[1], cube1_translated[2], cube1_translated[6], cube1_translated[5]}));
     planes.push_back(new Plane({cube1_translated[3], cube1_translated[7], cube1_translated[6], cube1_translated[2]}));
-    
+    */
 
-    planes.push_back(new Plane({{-1.0, 0.0, 2.8}}, true, enemy, 0, false));
-    planes.push_back(new Plane({{0.0, 0.0, 2.8}}, true, enemy, 1, false));
-    planes.push_back(new Plane({{1.0, 0.0, 2.8}}, true, enemy, 2, false));
+    sprites.push_back(new Plane({{-1.0, 0.0, 2.8}}, true, enemy, 0, false));
+    sprites.push_back(new Plane({{0.0, 0.0, 2.8}}, true, enemy, 1, false));
+    sprites.push_back(new Plane({{1.0, 0.0, 2.8}}, true, enemy, 2, false));
+    sprites.push_back(new Plane({{12.5, 0.0, 3.5}}, true, enemy, 3, false));
+
+    
+    planes.push_back(new Plane({{3.0, -1.0, 3.0, 1.0}, {3.0, 1.0, 3.0, 1.0}, {1.0, 1.0, 1.0, 1.0}, {1.0, -1.0, 1.0, 1.0}}));
+    planes.push_back(new Plane({{8.0, -1.0, 8.0, 1.0}, {8.0, 1.0, 8.0, 1.0}, {5.0, 1.0, 5.0, 1.0}, {5.0, -1.0, 5.0, 1.0}}));
+    planes.push_back(new Plane({{5.0, -1.0, 5.0, 1.0}, {5.0, 1.0, 5.0, 1.0}, {6.0, 1.0, 4.0, 1.0}, {6.0, -1.0, 4.0, 1.0}}));
+    planes.push_back(new Plane({{5.0, -1.0, 1.0, 1.0}, {5.0, 1.0, 1.0, 1.0}, {3.0, 1.0, 3.0, 1.0}, {3.0, -1.0, 3.0, 1.0}}));
+    planes.push_back(new Plane({{8.0, -1.0, 1.0, 1.0}, {8.0, 1.0, 1.0, 1.0}, {5.0, 1.0, 1.0, 1.0}, {5.0, -1.0, 1.0, 1.0}}));
+    planes.push_back(new Plane({{6.0, -1.0, 4.0, 1.0}, {6.0, 1.0, 4.0, 1.0}, {9.0, 1.0, 7.0, 1.0}, {9.0, -1.0, 7.0, 1.0}}));
+    planes.push_back(new Plane({{9.0, -1.0, 2.0, 1.0}, {9.0, 1.0, 2.0, 1.0}, {8.0, 1.0, 1.0, 1.0}, {8.0, -1.0, 1.0, 1.0}}));
+    planes.push_back(new Plane({{11.0, -1.0, 0.0, 1.0}, {11.0, 1.0, 0.0, 1.0}, {9.0, 1.0, 2.0, 1.0}, {9.0, -1.0, 2.0, 1.0}}));
+    planes.push_back(new Plane({{13.0, -1.0, 2.0, 1.0}, {13.0, 1.0, 2.0, 1.0}, {11.0, 1.0, 0.0, 1.0}, {11.0, -1.0, 0.0, 1.0}}));
+    //planes.push_back(new Plane({{14.0, -1.0, 5.0, 1.0}, {14.0, 1.0, 5.0, 1.0}, {13.0, 1.0, 2.0, 1.0}, {13.0, -1.0, 2.0, 1.0}}));
+    planes.push_back(new Plane({{9.0, -1.0, 7.0, 1.0}, {9.0, 1.0, 7.0, 1.0}, {8.0, 1.0, 8.0, 1.0}, {8.0, -1.0, 8.0, 1.0}}));
 
     BSP_node* planes_painter = create_BSP_tree(planes);
 
@@ -969,12 +1000,12 @@ int main() {
             if (ammo > 0) {
                 int hit_pixel = image[IMAGE_HEIGHT/2-1][IMAGE_WIDTH/2];
                 if (hit_pixel > 1) {
-                    size_t s = planes.size();
+                    size_t s = sprites.size();
                     //cout << hit_pixel << ", " << sprites_created << endl;
                     for (size_t i = 0; i < s; ++i) {
-                        if (planes[i]->is_sprite && planes[i]->sprite_id == hit_pixel / 2 - 1) {
+                        if (sprites[i]->sprite_id == hit_pixel / 2 - 1) {
                             //cout << i << ", " << planes[i]->invis << endl;
-                            planes[i]->invis = true;
+                            sprites[i]->invis = true;
                             --enemies_alive;
                         }
                     }
@@ -1022,7 +1053,8 @@ int main() {
         }
         
         for (auto &row : image) fill(row.begin(), row.end(), 0);
-        draw_painter(planes_painter, camera_pos, camera_rot);
+
+        draw_painter(planes_painter, camera_pos, sprites);
         render(image, ui_elements, 1);
 
     
