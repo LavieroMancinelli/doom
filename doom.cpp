@@ -865,7 +865,7 @@ bool checkCollision(double x, double z, vector<Plane*> col_planes) {
             double ABlen = pow(ABx, 2) + pow(ABz, 2);
             if (ABlen == 0) return sqrt(pow(APx, 2) + pow(APz, 2)) >= COLLISION_DISTANCE; // A and B the same point
 
-            double t = (pow(APx, 2) + pow(APz, 2)) / ABlen;
+            double t = (APx * ABx + APz * ABz) / ABlen;
 
             double dist;
             if (t < 0) dist = sqrt(pow(x-vertA[0], 2) + pow(z-vertA[2], 2)); // point closest to A
@@ -949,7 +949,7 @@ int main() {
     
 
     collision_planes.push_back(new Plane({{8.0, -1.0, 8.0, 1.0}, {5.0, -1.0, 5.0, 1.0}, {6.0, -1.0, 4.0, 1.0}, {9.0, -1.0, 7.0, 1.0}}));
-    collision_planes.push_back(new Plane({{13.0, -1.0, 11.0, 1.0}, {-5.0, -1.0, 11.0, 1.0}, {-5.0, -1.0, 0.0, 1.0}, {0.0, -1.0, 0.0, 1.0}, {2.0, -1.0, 2.0, 1.0}, {5.0, -1.0, 1.0, 1.0}, {8.0, -1.0, 1.0, 1.0}, {9.0, -1.0, 2.0, 1.0}, {11.0, -1.0, 0.0, 1.0}, {13.0, -1.0, 2.0, 1.0}, {13.0, -1.0, 6.5, 1.0}, {18.0, -1.0, 11.0, 1.0}}));
+    collision_planes.push_back(new Plane({{13.0, -1.0, 11.0, 1.0}, {-5.0, -1.0, 11.0, 1.0}, {-5.0, -1.0, 0.0, 1.0}, {0.0, -1.0, 0.0, 1.0}, {2.0, -1.0, 2.0, 1.0}, {5.0, -1.0, 1.0, 1.0}, {8.0, -1.0, 1.0, 1.0}, {9.0, -1.0, 2.0, 1.0}, {11.0, -1.0, 0.0, 1.0}, {13.0, -1.0, 2.0, 1.0}}));
     BSP_node* planes_painter = create_BSP_tree(planes);
 
     
