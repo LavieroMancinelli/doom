@@ -813,6 +813,7 @@ BSP_node* create_BSP_tree(vector<Plane*>& planes) {
 void draw_painter(BSP_node* node, const vector<double>& c_pos, vector<Plane*>& sprites) {
     if (node == nullptr) return;
 
+    
     vector<Plane*> back, front;
 
     for (auto& s : sprites) {
@@ -826,21 +827,18 @@ void draw_painter(BSP_node* node, const vector<double>& c_pos, vector<Plane*>& s
     
     if (node->val->compare(c_pos) >= 0) {
         draw_painter(node->lc, c_pos, back);
-        for (auto& s : back)
-            s->draw();
         node->val->draw();
-        for (auto& s : front)
-            s->draw();
-        draw_painter(node->rc, c_pos, front);
+        draw_painter(node->rc, c_pos, front);      
     } else {
         draw_painter(node->rc, c_pos, front);
-        for (auto& s : front)
-            s->draw();
         node->val->draw();
-        for (auto& s : back)
-            s->draw();
         draw_painter(node->lc, c_pos, back);
-    }        
+    }
+    
+    if (!node->lc && !node->rc) { // draw sprites at leaf nodes
+        for (auto& s : sprites)
+            s->draw();
+    }
 }
 
 void waitOnMenu() {
@@ -928,7 +926,7 @@ int main() {
     sprites.push_back(new Plane({{-1.0, 0.0, 5.0}}, true, enemy, 0, false));
     sprites.push_back(new Plane({{0.0, 0.0, 5.0}}, true, enemy, 1, false));
     sprites.push_back(new Plane({{1.0, 0.0, 5.0}}, true, enemy, 2, false));
-    sprites.push_back(new Plane({{11, 0.0, 6}}, true, enemy, 3, false));
+    sprites.push_back(new Plane({{11.0, 0.0, 6.0}}, true, enemy, 3, false));
 
     
     planes.push_back(new Plane({{2.0, -1.0, 2.0, 1.0}, {2.0, 1.0, 2.0, 1.0}, {0.0, 1.0, 0.0, 1.0}, {0.0, -1.0, 0.0, 1.0}}));
