@@ -17,7 +17,7 @@ bool reloading = false;
 int shooting = 0;
 const int RELOAD_DUR = 32;
 int reload_counter = 0;
-const double COLLISION_DISTANCE = 1.5;
+const double COLLISION_DISTANCE = 1.4;
 const double MOVE_SPEED = 0.05;
 const int FRAMERATE = 90;
 const double FRAME_DUR = 1000/FRAMERATE;
@@ -858,7 +858,7 @@ bool checkCollision(double x, double z, vector<Plane*> col_planes) {
         for (size_t j = 0; j < sp; ++j) { // edge
             vector<double> vertA, vertB;
             vertA = p->vec[j];
-            vertB = p->vec[(j+1) % s]; 
+            vertB = p->vec[(j+1) % sp]; 
 
             double ABx = vertB[0] - vertA[0], ABz = vertB[2] - vertA[2];
             double APx = x - vertA[0], APz = z - vertA[2];
@@ -884,7 +884,7 @@ int main() {
     cout << "\x1b[?25l";
 
     vector<vector<int>> cube_points;
-    camera_pos = {0.0, 0.0, 0.0};
+    camera_pos = {0.0, 0.0, 2.0};
     camera_rot = {0.0, 0.0, 0.0};
 
 
@@ -925,24 +925,31 @@ int main() {
     planes.push_back(new Plane({cube1_translated[3], cube1_translated[7], cube1_translated[6], cube1_translated[2]}));
     */
 
-    sprites.push_back(new Plane({{-1.0, 0.0, 2.8}}, true, enemy, 0, false));
-    sprites.push_back(new Plane({{0.0, 0.0, 2.8}}, true, enemy, 1, false));
-    sprites.push_back(new Plane({{1.0, 0.0, 2.8}}, true, enemy, 2, false));
-    sprites.push_back(new Plane({{12.5, 0.0, 3.5}}, true, enemy, 3, false));
+    sprites.push_back(new Plane({{-1.0, 0.0, 5.0}}, true, enemy, 0, false));
+    sprites.push_back(new Plane({{0.0, 0.0, 5.0}}, true, enemy, 1, false));
+    sprites.push_back(new Plane({{1.0, 0.0, 5.0}}, true, enemy, 2, false));
+    sprites.push_back(new Plane({{11, 0.0, 6}}, true, enemy, 3, false));
 
     
-    planes.push_back(new Plane({{3.0, -1.0, 3.0, 1.0}, {3.0, 1.0, 3.0, 1.0}, {1.0, 1.0, 1.0, 1.0}, {1.0, -1.0, 1.0, 1.0}}));
+    planes.push_back(new Plane({{2.0, -1.0, 2.0, 1.0}, {2.0, 1.0, 2.0, 1.0}, {0.0, 1.0, 0.0, 1.0}, {0.0, -1.0, 0.0, 1.0}}));
     planes.push_back(new Plane({{8.0, -1.0, 8.0, 1.0}, {8.0, 1.0, 8.0, 1.0}, {5.0, 1.0, 5.0, 1.0}, {5.0, -1.0, 5.0, 1.0}}));
     planes.push_back(new Plane({{5.0, -1.0, 5.0, 1.0}, {5.0, 1.0, 5.0, 1.0}, {6.0, 1.0, 4.0, 1.0}, {6.0, -1.0, 4.0, 1.0}}));
-    planes.push_back(new Plane({{5.0, -1.0, 1.0, 1.0}, {5.0, 1.0, 1.0, 1.0}, {3.0, 1.0, 3.0, 1.0}, {3.0, -1.0, 3.0, 1.0}}));
+    planes.push_back(new Plane({{5.0, -1.0, 1.0, 1.0}, {5.0, 1.0, 1.0, 1.0}, {2.0, 1.0, 2.0, 1.0}, {2.0, -1.0, 2.0, 1.0}}));
     planes.push_back(new Plane({{8.0, -1.0, 1.0, 1.0}, {8.0, 1.0, 1.0, 1.0}, {5.0, 1.0, 1.0, 1.0}, {5.0, -1.0, 1.0, 1.0}}));
     planes.push_back(new Plane({{6.0, -1.0, 4.0, 1.0}, {6.0, 1.0, 4.0, 1.0}, {9.0, 1.0, 7.0, 1.0}, {9.0, -1.0, 7.0, 1.0}}));
+    planes.push_back(new Plane({{9.0, -1.0, 7.0, 1.0}, {9.0, 1.0, 7.0, 1.0}, {8.0, 1.0, 8.0, 1.0}, {8.0, -1.0, 8.0, 1.0}}));
     planes.push_back(new Plane({{9.0, -1.0, 2.0, 1.0}, {9.0, 1.0, 2.0, 1.0}, {8.0, 1.0, 1.0, 1.0}, {8.0, -1.0, 1.0, 1.0}}));
     planes.push_back(new Plane({{11.0, -1.0, 0.0, 1.0}, {11.0, 1.0, 0.0, 1.0}, {9.0, 1.0, 2.0, 1.0}, {9.0, -1.0, 2.0, 1.0}}));
     planes.push_back(new Plane({{13.0, -1.0, 2.0, 1.0}, {13.0, 1.0, 2.0, 1.0}, {11.0, 1.0, 0.0, 1.0}, {11.0, -1.0, 0.0, 1.0}}));
+    planes.push_back(new Plane({{13.0, -1.0, 11.0, 1.0}, {13.0, 1.0, 11.0, 1.0}, {13.0, 1.0, 2.0, 1.0}, {13.0, -1.0, 2.0, 1.0}}));
     //planes.push_back(new Plane({{14.0, -1.0, 5.0, 1.0}, {14.0, 1.0, 5.0, 1.0}, {13.0, 1.0, 2.0, 1.0}, {13.0, -1.0, 2.0, 1.0}}));
-    planes.push_back(new Plane({{9.0, -1.0, 7.0, 1.0}, {9.0, 1.0, 7.0, 1.0}, {8.0, 1.0, 8.0, 1.0}, {8.0, -1.0, 8.0, 1.0}}));
+    planes.push_back(new Plane({{-5.0, -1.0, 11.0, 1.0}, {-5.0, 1.0, 11.0, 1.0}, {13.0, 1.0, 11.0, 1.0}, {13.0, -1.0, 11.0, 1.0}}));
+    planes.push_back(new Plane({{-5.0, -1.0, 11.0, 1.0}, {-5.0, 1.0, 11.0, 1.0}, {-5.0, 1.0, 0.0, 1.0}, {-5.0, -1.0, 0.0, 1.0}}));
+    planes.push_back(new Plane({{-5.0, -1.0, 0.0, 1.0}, {-5.0, 1.0, 0.0, 1.0}, {0.0, 1.0, 0.0, 1.0}, {0.0, -1.0, 0.0, 1.0}}));
+    
 
+    collision_planes.push_back(new Plane({{8.0, -1.0, 8.0, 1.0}, {5.0, -1.0, 5.0, 1.0}, {6.0, -1.0, 4.0, 1.0}, {9.0, -1.0, 7.0, 1.0}}));
+    collision_planes.push_back(new Plane({{13.0, -1.0, 11.0, 1.0}, {-5.0, -1.0, 11.0, 1.0}, {-5.0, -1.0, 0.0, 1.0}, {0.0, -1.0, 0.0, 1.0}, {2.0, -1.0, 2.0, 1.0}, {5.0, -1.0, 1.0, 1.0}, {8.0, -1.0, 1.0, 1.0}, {9.0, -1.0, 2.0, 1.0}, {11.0, -1.0, 0.0, 1.0}, {13.0, -1.0, 2.0, 1.0}, {13.0, -1.0, 6.5, 1.0}, {18.0, -1.0, 11.0, 1.0}}));
     BSP_node* planes_painter = create_BSP_tree(planes);
 
     
