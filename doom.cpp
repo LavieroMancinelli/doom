@@ -57,32 +57,6 @@ vector<vector<char>> gun0 = {
 
 /*
 00000000000000000000000000
-00000001000000000000000000
-00000000000000000000000000
-00000000001111000000000000
-00000000011111110000000000
-00000000011111111111100000
-00000000111111111111110000
-00000001111111111111110000
-00000111111100011111110000
-00001111110000111111111000
-*/
-
-/*
-00000000000000000000000000
-00000000111111100000000000
-00000011000000011000000000
-00000010001111001000000000
-00000010011111111000000000
-00000001011111111111100000
-00000000111111111111110000
-00000001111111111111110000
-00000111111100011111110000
-00001111110000111111111000
-*/
-
-/*
-00000000000000000000000000
 00000000000000000000000000
 00000000000000000000000000
 00000000000000000000000000
@@ -128,89 +102,8 @@ vector<vector<int>> enemy ={{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
                             {0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0},
                             {0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0},
                             {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+                         
 
-
-/*
-vector<vector<int>> enemy ={{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0},
-                            {0,0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0},
-                            {0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,0,0,0,0},
-                            {0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,0,0,0,0},
-                            {0,0,0,3,3,3,3,0,0,0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,3,3,3,3,0,0,0},
-                            {0,0,0,3,3,3,3,0,0,0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,3,3,3,3,0,0,0},
-                            {0,0,3,3,3,3,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,3,3,3,3,0,0},
-                            {0,0,3,3,3,3,0,0,0,3,3,3,3,3,0,0,0,0,3,3,3,3,3,0,0,0,3,3,3,3,0,0},
-                            {0,0,3,3,3,3,0,0,0,3,3,3,0,0,0,0,0,0,0,0,3,3,3,0,0,0,3,3,3,3,0,0},
-                            {0,3,3,3,3,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,3,3,3,3,0,0,0,3,3,3,3,0},
-                            {0,3,3,3,3,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,3,3,3,3,0},
-                            {0,3,3,3,3,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,3,3,3,3,0},
-                            {0,3,3,3,3,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,3,3,3,3,0},
-                            {0,3,3,3,3,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,3,3,3,3,0},
-                            {0,3,3,3,3,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,3,3,3,3,0,0,0,3,3,3,3,0},
-                            {0,0,3,3,3,3,0,0,0,3,3,3,0,0,0,0,0,0,0,0,3,3,3,0,0,0,3,3,3,3,0,0},
-                            {0,0,3,3,3,3,0,0,0,3,3,3,3,3,0,0,0,0,3,3,3,3,3,0,0,0,3,3,3,3,0,0},
-                            {0,0,3,3,3,3,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,3,3,3,3,0,0},
-                            {0,0,0,3,3,3,3,0,0,0,0,3,3,3,3,3,3,3,3,3,3,0,0,0,0,3,3,3,3,0,0,0},
-                            {0,0,0,3,3,3,3,0,0,0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,3,3,3,3,0,0,0},
-                            {0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,0,0,0,0},
-                            {0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,0,0,0,0},
-                            {0,0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0},
-                            {0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-*/                            
-
-                            /*
-{{0,0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,3,3,3,0,0,0,0},
-                            {0,0,3,3,2,2,2,3,3,0,0},
-                            {0,3,2,2,2,2,2,2,2,3,0},
-                            {3,2,2,2,3,3,3,2,2,2,3},
-                            {3,2,2,2,3,3,3,2,2,2,3},
-                            {0,3,2,2,2,2,2,2,2,3,0},
-                            {0,0,3,3,2,2,2,3,3,0,0},
-                            {0,0,0,0,3,3,3,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0,0}};
-                            */
-
-/*{{0,0,0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,1,1,1,1,0,0,0,0},
-                            {0,0,0,0,1,1,1,1,0,0,0,0},
-                            {0,0,0,1,1,1,1,1,1,1,0,0},
-                            {0,0,1,1,1,1,1,1,1,1,1,0},
-                            {0,1,1,1,1,1,1,1,1,1,1,0},
-                            {0,1,1,0,1,1,1,1,0,0,0,0},
-                            {0,1,1,0,1,1,1,1,0,0,0,0},
-                            {0,0,0,1,1,1,1,1,1,0,0,0},
-                            {0,0,0,1,1,1,1,1,1,0,0,0},
-                            {0,0,0,1,1,0,0,1,1,0,0,0},
-                            {0,0,0,1,1,0,0,1,1,0,0,0} };
-                            */
-/*{{0,0,1,1,1,0,0},
-                            {0,0,1,1,1,0,0},
-                            {0,1,1,1,1,1,0},
-                            {0,1,1,1,1,1,0},
-                            {0,1,1,1,1,1,0},
-                            {0,0,1,0,1,0,0},
-                            {0,0,1,0,1,0,0}};
-                            */
-
-/*{{0,0,0,1,1,1,0,0,0},
-                            {0,0,0,1,1,1,0,0,0},
-                            {0,0,0,0,1,0,0,0,0},
-                            {0,0,1,1,1,1,1,0,0},
-                            {0,1,1,1,1,1,1,1,0},                            
-                            {1,1,0,1,1,1,0,1,1},
-                            {1,0,0,1,1,1,0,0,1},
-                            {0,0,1,1,0,1,1,0,0},                            
-                            {0,0,1,1,0,1,1,0,0},
-                            {0,0,1,1,0,1,1,0,0}};
-                            */
 /*
 +----------------------------------------------+
 |   #####    ####    ####   ##   ##            |
@@ -245,9 +138,6 @@ vector<pair<vector<int>, vector<vector<char>>>> ui_elements = {
        {{'E','N','E','M','I','E','S',' ','L','E','F','T',':','\0','\0','\0'}}}
 };
 
-/*vector<vector<char>> = {{'A','M','M','O',':','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0'},
-                        {'|','|','|','|','|','|','|','|','|','|','|','|','|','|','|','|'}};
-                        */
 vector<double> three_to_four(vector<double> &v) {
     if (v.size() != 3) throw invalid_argument("Vector must be size 3");
     return vector<double>{v[0], v[1], v[2], 1};
@@ -360,8 +250,6 @@ vector<int> project(const vector<double>& points, double cam_z) { // returns vec
     // points is already converted to vec4
     vector<double> projected_points(4, 0);
     vector<int> out;
-    // convert to camera space (mult with rot^-1 * trans^-1) vvv moved to draw so can add clipping
-    //vector<double> camerad = matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), translate_m_inv(c_pos[0], c_pos[1], c_pos[2])), points);
     projected_points = matrix_mult(projection_m, points);
     
     double x = projected_points[0];
@@ -444,7 +332,7 @@ void draw_line(vector<int> a, vector<int> b, vector<vector<int>>& canvas) { // b
         if (i < h && i > 0) canvas[i][w-1] = 1;
 }
 
-void add_canvas(vector<vector<int>>& out, vector<vector<int>>& part) {// adds part to out
+void add_canvas(vector<vector<int>>& out, vector<vector<int>>& part) { // adds part to out
     size_t h = out.size(), w = out[0].size();
     for (size_t i = 0; i < h; ++i) {
         for (size_t j = 0; j < w; ++j) {
@@ -556,9 +444,7 @@ void draw_sprite(vector<int> base, vector<vector<int>>& sprite, vector<vector<in
     int x = base[0], y = base[1], z = base[2];
 
     if (z <= 0) return;
-    double scale = SPRITE_SCALE * FOCAL_LENGTH / static_cast<double>(z); //= 0.25 / ((double)z / 12); // 5 constant
-    //if (scale < 0.1) return;
-
+    double scale = SPRITE_SCALE * FOCAL_LENGTH / static_cast<double>(z);
     
     int key = (sprite_id)*2;
     // add scaled h and w
@@ -593,22 +479,7 @@ void draw_sprite(vector<int> base, vector<vector<int>>& sprite, vector<vector<in
             if (!offscreen(px,py,canvas))
                 canvas[y-scaled_h/2+i][x-scaled_w/2+j] = mode == 0 ? 0 : mode + key;
         }
-    }
-        
-
-    /*
-    int key = (sprite_id)*2;
-    for (size_t i = 0; i < scaled_h; ++i) {
-        for (size_t j = 0; j < scaled_w; ++j) {
-            int og_i = i / scale, og_j = j / scale;
-            int py = y - scaled_h / 2 + i, px = x - scaled_w / 2 + j;
-            if (!offscreen(px,py,canvas)) {
-                canvas[py][px] = sprite[og_i][og_j] == 0 ? 0 : sprite[og_i][og_j] + key;
-            }
-        }
-    }
-        */
-    
+    }    
 }
 
 vector<vector<double>> clip_poly(const vector<vector<double>> &points, double near_clip = 0.0) { // Sutherland Hodgman
@@ -704,7 +575,6 @@ public:
         if (!plane_points[s-1].empty() && !plane_points[0].empty())
             draw_line(plane_points[s-1], plane_points[0], plane_canvas);
 
-        // seems like fill_poly is being applied within each poly but those polys are not occluding on the image canvas
         fill_poly(plane_canvas);    
         add_canvas(image, plane_canvas);
     }
@@ -813,9 +683,7 @@ BSP_node* create_BSP_tree(vector<Plane*>& planes) {
 void draw_painter(BSP_node* node, const vector<double>& c_pos, vector<Plane*>& sprites) {
     if (node == nullptr) return;
 
-    
     vector<Plane*> back, front;
-
     for (auto& s : sprites) {
         if (node->val->compare(s->vec[0]) < 0)
             back.push_back(s);
@@ -823,21 +691,24 @@ void draw_painter(BSP_node* node, const vector<double>& c_pos, vector<Plane*>& s
             front.push_back(s);
     }
     
-    
-    
     if (node->val->compare(c_pos) >= 0) {
         draw_painter(node->lc, c_pos, back);
         node->val->draw();
-        draw_painter(node->rc, c_pos, front);      
+        draw_painter(node->rc, c_pos, front);
+        
+        if (!node->rc) {
+            for (auto& s : front)
+                s->draw();
+        }
     } else {
         draw_painter(node->rc, c_pos, front);
         node->val->draw();
         draw_painter(node->lc, c_pos, back);
-    }
-    
-    if (!node->lc && !node->rc) { // draw sprites at leaf nodes
-        for (auto& s : sprites)
-            s->draw();
+
+        if (node->lc) {
+            for (auto& s : back)
+                s->draw();
+        }
     }
 }
 
@@ -890,43 +761,10 @@ int main() {
     vector<Plane*> collision_planes;
     vector<Plane*> sprites;
 
-    vector<vector<double>> cube_translated = translate(cube, {-4.0, 0.0, 3.0});
-        
-    /*
-    planes.push_back(Plane({cube_translated[3], cube_translated[2], cube_translated[1], cube_translated[0]}));
-    planes.push_back(Plane({cube_translated[4], cube_translated[7], cube_translated[3], cube_translated[0]}));
-    planes.push_back(Plane({cube_translated[5], cube_translated[4], cube_translated[0], cube_translated[1]}));
-    planes.push_back(Plane({cube_translated[6], cube_translated[5], cube_translated[1], cube_translated[2]}));
-    planes.push_back(Plane({cube_translated[7], cube_translated[6], cube_translated[2], cube_translated[3]}));
-    planes.push_back(Plane({cube_translated[4], cube_translated[5], cube_translated[6], cube_translated[7]}));
-    */
-    
-    /*
-    Plane* cp0 = new Plane({cube_translated[0], cube_translated[1], cube_translated[2], cube_translated[3]});
-    collision_planes.push_back(cp0);
-    planes.push_back(cp0);
-    planes.push_back(new Plane({cube_translated[4], cube_translated[7], cube_translated[6], cube_translated[5]}));
-    planes.push_back(new Plane({cube_translated[0], cube_translated[3], cube_translated[7], cube_translated[4]}));
-    planes.push_back(new Plane({cube_translated[0], cube_translated[4], cube_translated[5], cube_translated[1]}));
-    planes.push_back(new Plane({cube_translated[1], cube_translated[2], cube_translated[6], cube_translated[5]}));
-    planes.push_back(new Plane({cube_translated[3], cube_translated[7], cube_translated[6], cube_translated[2]}));
-    
-    
-    vector<vector<double>> cube1_translated = translate(cube, {4.0, 0.0, 3.0});
-    Plane* cp1 = new Plane({cube1_translated[0], cube1_translated[1], cube1_translated[2], cube1_translated[3]});
-    collision_planes.push_back(cp1);
-    planes.push_back(cp1);
-    planes.push_back(new Plane({cube1_translated[4], cube1_translated[7], cube1_translated[6], cube1_translated[5]}));
-    planes.push_back(new Plane({cube1_translated[0], cube1_translated[3], cube1_translated[7], cube1_translated[4]}));
-    planes.push_back(new Plane({cube1_translated[0], cube1_translated[4], cube1_translated[5], cube1_translated[1]}));
-    planes.push_back(new Plane({cube1_translated[1], cube1_translated[2], cube1_translated[6], cube1_translated[5]}));
-    planes.push_back(new Plane({cube1_translated[3], cube1_translated[7], cube1_translated[6], cube1_translated[2]}));
-    */
-
     sprites.push_back(new Plane({{-4.0, 0.0, 4.0}}, true, enemy, 0, false));
-    sprites.push_back(new Plane({{4.0, 0.0, 3.0}}, true, enemy, 1, false));
-    sprites.push_back(new Plane({{1.0, 0.0, 4.0}}, true, enemy, 2, false));
-    sprites.push_back(new Plane({{11.0, 0.0, 6.0}}, true, enemy, 3, false));
+    sprites.push_back(new Plane({{1.0, 0.0, 4.0}}, true, enemy, 1, false));
+    sprites.push_back(new Plane({{11.0, 0.0, 5.0}}, true, enemy, 2, false));
+    sprites.push_back(new Plane({{12.0, 0.0, 1.5}}, true, enemy, 3, false));
 
     
     planes.push_back(new Plane({{2.0, -1.0, 2.0, 1.0}, {2.0, 1.0, 2.0, 1.0}, {0.0, 1.0, 0.0, 1.0}, {0.0, -1.0, 0.0, 1.0}}));
@@ -944,14 +782,15 @@ int main() {
     planes.push_back(new Plane({{-5.0, -1.0, 11.0, 1.0}, {-5.0, 1.0, 11.0, 1.0}, {-5.0, 1.0, 0.0, 1.0}, {-5.0, -1.0, 0.0, 1.0}}));
     planes.push_back(new Plane({{-5.0, -1.0, 0.0, 1.0}, {-5.0, 1.0, 0.0, 1.0}, {0.0, 1.0, 0.0, 1.0}, {0.0, -1.0, 0.0, 1.0}}));
     // obstacle 2
-    planes.push_back(new Plane({{-1.0, 1.0, 8.0, 1.0}, {-1.0, -1.0, 8.0, 1.0}, {-2.0, -1.0, 6.0, 1.0}, {-2.0, 1.0, 6.0, 1.0}}));
-    planes.push_back(new Plane({{2.0, 1.0, 7.0, 1.0}, {2.0, -1.0, 7.0, 1.0}, {-1.0, -1.0, 8.0, 1.0}, {-1.0, 1.0, 8.0, 1.0}}));
+    planes.push_back(new Plane({{-2.0, -1.0, 6.0, 1.0}, {-2.0, 1.0, 6.0, 1.0}, {-1.0, 1.0, 8.0, 1.0}, {-1.0, -1.0, 8.0, 1.0}}));
+    planes.push_back(new Plane({{-1.0, -1.0, 8.0, 1.0}, {-1.0, 1.0, 8.0, 1.0}, {2.0, 1.0, 7.0, 1.0}, {2.0, -1.0, 7.0, 1.0}}));
     planes.push_back(new Plane({{2.0, 1.0, 7.0, 1.0}, {2.0, -1.0, 7.0, 1.0}, {1.0, -1.0, 5.0, 1.0}, {1.0, 1.0, 5.0, 1.0}}));
-    //planes.push_back(new Plane({{1.0, 1.0, 5.0, 1.0}, {1.0, -1.0, 5.0, 1.0}, {-2.0, -1.0, 6.0, 1.0}, {-2.0, 1.0, 6.0, 1.0}}));
+    planes.push_back(new Plane({{1.0, 1.0, 5.0, 1.0}, {1.0, -1.0, 5.0, 1.0}, {-2.0, -1.0, 6.0, 1.0}, {-2.0, 1.0, 6.0, 1.0}}));
     
 
     collision_planes.push_back(new Plane({{8.0, -1.0, 8.0, 1.0}, {5.0, -1.0, 5.0, 1.0}, {6.0, -1.0, 4.0, 1.0}, {9.0, -1.0, 7.0, 1.0}}));
     collision_planes.push_back(new Plane({{13.0, -1.0, 11.0, 1.0}, {-5.0, -1.0, 11.0, 1.0}, {-5.0, -1.0, 0.0, 1.0}, {0.0, -1.0, 0.0, 1.0}, {2.0, -1.0, 2.0, 1.0}, {5.0, -1.0, 1.0, 1.0}, {8.0, -1.0, 1.0, 1.0}, {9.0, -1.0, 2.0, 1.0}, {11.0, -1.0, 0.0, 1.0}, {13.0, -1.0, 2.0, 1.0}}));
+    collision_planes.push_back(new Plane({{-2.0, -1.0, 6.0, 1.0}, {-1.0, -1.0, 8.0, 1.0}, {2.0, -1.0, 7.0, 1.0}, {1.0, -1.0, 5.0, 1.0}}));
     BSP_node* planes_painter = create_BSP_tree(planes);
 
     
@@ -960,9 +799,7 @@ int main() {
         LARGE_INTEGER t_start, t_end, t_freq;
         QueryPerformanceFrequency(&t_freq);
         QueryPerformanceCounter(&t_start);
-        
-        //int t = i % 6;
-        //if (i % 6 == 0) s = (s+1) % 4;
+
 
         if (isKeyDown(VK_LEFT))
             camera_rot[1] += 0.03;
@@ -1010,10 +847,8 @@ int main() {
                 int hit_pixel = image[IMAGE_HEIGHT/2-1][IMAGE_WIDTH/2];
                 if (hit_pixel > 1) {
                     size_t s = sprites.size();
-                    //cout << hit_pixel << ", " << sprites_created << endl;
                     for (size_t i = 0; i < s; ++i) {
                         if (sprites[i]->sprite_id == hit_pixel / 2 - 1) {
-                            //cout << i << ", " << planes[i]->invis << endl;
                             sprites[i]->invis = true;
                             --enemies_alive;
                         }
@@ -1031,9 +866,10 @@ int main() {
         }
 
         if (!(GetAsyncKeyState(VK_SPACE) & 0x8000)) {
-            if (!reloading) {shooting = 0;
+            if (!reloading) {
+                shooting = 0;
                 //ui_elements[1].second = gun0;
-                }
+            }
         }
 
         if (isKeyDown(0x52)) { // r
