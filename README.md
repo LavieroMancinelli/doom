@@ -3,7 +3,7 @@
 ![Doom demo](./demo.gif)
 
 # About the Program
-This project is an immitation of the original DOOM (1993) based on rasterization in the terminal. It is a 3d renderer built from scratch in C++ to run in the windows command line without using OpenGL or DirectX. The render pipeline is based on projection and camera transforms of points, BSP tree plane sorting, near-plane clipping  , and screen-space line drawing and polygon filling.
+This project is an imitation of the original DOOM (1993) based on rasterization in the terminal. It is a 3d renderer built from scratch in C++ to run in the windows command line without using OpenGL or DirectX. The render pipeline is based on projection and camera transforms of points, BSP tree plane sorting, near-plane clipping  , and screen-space line drawing and polygon filling.
 
 ## How to Build/Run
 1. Build (windows)
