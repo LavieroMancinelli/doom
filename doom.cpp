@@ -8,15 +8,6 @@ using namespace std;
 
 const int IMAGE_HEIGHT = 40;
 const int IMAGE_WIDTH = 80;
-int enemies_created = 0;
-int enemies_alive = 0;
-vector<vector<int>> image(IMAGE_HEIGHT, vector<int>(IMAGE_WIDTH, 0));
-const int AMMO_MAX = 64;
-int ammo = AMMO_MAX;
-bool reloading = false;
-int shooting = 0;
-const int RELOAD_DUR = 32;
-int reload_counter = 0;
 const double COLLISION_DISTANCE = 1.4;
 const double MOVE_SPEED = 0.05;
 const int FRAMERATE = 90;
@@ -24,11 +15,19 @@ const double FRAME_DUR = 1000/FRAMERATE;
 const double SPRITE_SCALE = 1.0;
 const double FOCAL_LENGTH = 1.0;
 const double NEAR_PLANE = 0.05;
+const int AMMO_MAX = 64;
+const int RELOAD_DUR = 32;
 
-vector<vector<double>> cube = { {-1,-1,-3}, {1,-1,-3}, {1,-1,1}, {-1, -1, 1},
-                                {-1,1,-3}, {1,1,-3}, {1,1,1}, {-1, 1, 1}};
 
-// 10x26 should be 15x40
+int enemies_created = 0;
+int enemies_alive = 0;
+vector<vector<int>> image(IMAGE_HEIGHT, vector<int>(IMAGE_WIDTH, 0));
+int ammo = AMMO_MAX;
+bool reloading = false;
+int shooting = 0;
+int reload_counter = 0;
+
+
 vector<vector<char>> gun0 = { 
 {'\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0'},
 {'\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0'},
@@ -41,34 +40,6 @@ vector<vector<char>> gun0 = {
 {'\0','\0','\0','\0','\0','#','#','#','#','#','#','#','\0','\0','\0','#','#','#','#','#','#','#','\0','\0','\0','\0'},
 {'\0','\0','\0','\0','#','#','#','#','#','#','\0','\0','\0','\0','#','#','#','#','#','#','#','#','#','\0','\0','\0'}
 };
-
-/*
-00000000000000000000000000
-00000000000000000000000000
-00000000000000000000000000
-00000000001111000000000000
-00000000011111110000000000
-00000000011111111111100000
-00000000111111111111110000
-00000001111111111111110000
-00000111111100011111110000
-00001111110000111111111000
-*/
-
-/*
-00000000000000000000000000
-00000000000000000000000000
-00000000000000000000000000
-00000000000000000000000000
-00000000000111110000000000
-00000000001111111111100000
-00000000001111111111111000
-00000000011111111111111000
-00000001111110000111111000
-00000011111000001111111100
-
-*/
-
 
 vector<vector<int>> enemy ={{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                             {0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -101,23 +72,7 @@ vector<vector<int>> enemy ={{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
                             {0,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0},
                             {0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0},
                             {0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-                         
-
-/*
-+----------------------------------------------+
-|   #####    ####    ####   ##   ##            |
-|   ######  ######  ######  ### ###            |
-|   ##  ##  ##  ##  ##  ##  #######            |
-|   ##  ##  ##  ##  ##  ##  ## # ##            |
-|   ######  ######  ######  ##   ##            |
-|   #####    ####    ####   ##   ##  at home   |
-|                                              |
-|   by Laviero Mancinelli                      |
-+----------------------------------------------+
-
-Press SPACE to begin
-*/
+                            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};                        
 
 vector<pair<vector<int>, vector<vector<char>>>> ui_elements = {
     {{IMAGE_HEIGHT-3, IMAGE_WIDTH-17}, 
@@ -222,7 +177,7 @@ vector<vector<double>> inverse(vector<vector<double>> v) {
     return v;
 }
 
-void print_m (vector<vector<double>> v) {
+void print_m(vector<vector<double>> v) {
     size_t y = v.size(), x = v[0].size();
     for (size_t i = 0; i < y; ++i) {
         cout << "{ ";
@@ -264,7 +219,7 @@ vector<int> project(const vector<double>& points, double cam_z) { // returns vec
     long long xs_ll = (long long)floor((xr + 1.0) * IMAGE_WIDTH / 2);
     long long ys_ll = (long long)floor((-yr + 1.0) * IMAGE_HEIGHT / 2);
     // clamp to a reasonable range
-    const long long MAX_COORD = 1'000'000;
+    const long long MAX_COORD = 1000000;
     if (llabs(xs_ll) > MAX_COORD || llabs(ys_ll) > MAX_COORD) return {};
 
     int xs = floor((xr + 1.0) * IMAGE_WIDTH / 2); // x screen
@@ -342,7 +297,6 @@ void add_canvas(vector<vector<int>>& out, vector<vector<int>>& part) { // adds p
                 out[i][j] = 0;
             else if (part[i][j] > 1) // # on enemy
                 out[i][j] = part[i][j];
-            //out[i][j] = clamp(out[i][j] + part[i][j], 0, 1); // if part has -1, out will be 0
         }
     }
 } 
@@ -376,18 +330,11 @@ void fill_poly(vector<vector<int>>& out) { // fills space inbetween 1s with -1s
 void render(vector<vector<int>>& image, vector<pair<vector<int>, vector<vector<char>>>> &ui_els, int mode) {
     size_t y_size = image.size(), x_size = image[0].size();
     string output = "";
-    //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2-1] = '-';
-    //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2-2] = '-';
     image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2] = -2;
-    //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2+1] = '-';
-    //image[IMAGE_HEIGHT/2][IMAGE_WIDTH/2+2] = '-';
-    //image[IMAGE_HEIGHT/2-1][IMAGE_WIDTH/2] = '|';
-    //image[IMAGE_HEIGHT/2+1][IMAGE_WIDTH/2] = '|';
     for (size_t i = 0; i < y_size; ++i) {
         for (size_t j = 0; j < x_size; ++j) {
             if (image[i][j] < 0) output += '+';
             else if (image[i][j] == 1 || image[i][j] % 2 == 1) {
-                //output += image[i][j] + '0';
                 output += '#';
                 
                 /*
@@ -400,7 +347,6 @@ void render(vector<vector<int>>& image, vector<pair<vector<int>, vector<vector<c
                 */
             }
             else if (image[i][j] == 0 || image[i][j] % 2 == 0) output += ' ';
-            //else output += image[i][j];
         }
         output += '\n';
     }
@@ -438,7 +384,6 @@ bool isKeyDown(int k) {
 }
 
 
-
 void draw_sprite(vector<int> base, vector<vector<int>>& sprite, vector<vector<int>>& canvas, int sprite_id) {
 
     int x = base[0], y = base[1], z = base[2];
@@ -454,7 +399,6 @@ void draw_sprite(vector<int> base, vector<vector<int>>& sprite, vector<vector<in
     for (size_t i = 0; i < scaled_h; ++i) {
         for (size_t j = 0; j < scaled_w; ++j) { 
             int src_y = static_cast<double>(i) / scale, src_x = static_cast<double>(j) / scale;
-            //int value = lanczos_resample(src_x, src_y, sprite, 1);
             
             unordered_map<int, int> src_box_cnt; // count of each type of pixel value in sprite image before scaling
             if (!offscreen(src_y-1,src_x,sprite)) ++src_box_cnt[sprite[src_y-1][src_x]];
@@ -598,9 +542,6 @@ public:
     int compare_camera(const vector<double>& c_pos, const vector<double>& c_rot) { // 1 -> point is on + side of plane, -1 on - side, 0 on plane
         if (is_sprite) {
             return 1;
-            //vector<double> cam = matrix_mult(matrix_mult(inverse(camera_rot_m(camera_rot)), translate_m_inv(c_pos[0], c_pos[1], c_pos[2])), vec[0]);
-            //double z = cam[2];
-            //return (z < 0 ? 1 : -1);
         }
         vector<double> a = vec[0], b = vec[1], c = vec[2]; 
         vector<double> ab = {b[0] - a[0], b[1] - a[1], b[2] - a[2]};
@@ -624,7 +565,6 @@ public:
         }
         double s = vec.size();
         return {x/s, y/s, z/s};
-        //return vec[0];
     }
 
     bool operator==(const Plane& other) const {
@@ -661,7 +601,7 @@ struct BSP_node {
 
 
 
-// each call returns head (random pick out of list), and list of planes still need to be added
+// each call returns head (random pick out of list), and list of planes that still need to be added
 BSP_node* create_BSP_tree(vector<Plane*>& planes) {
     size_t s = planes.size();
     if (s == 0) return nullptr;
@@ -752,7 +692,6 @@ int main() {
     cout << "\x1b[2J";
     cout << "\x1b[?25l";
 
-    vector<vector<int>> cube_points;
     camera_pos = {0.0, 0.0, 2.0};
     camera_rot = {0.0, 0.0, 0.0};
 
@@ -855,7 +794,6 @@ int main() {
                     }
                 }
                 shooting = 1;
-                //ui_elements[1].second = gun1;
                 --ammo;
             }
             if (ammo <= 0) {
@@ -868,7 +806,6 @@ int main() {
         if (!(GetAsyncKeyState(VK_SPACE) & 0x8000)) {
             if (!reloading) {
                 shooting = 0;
-                //ui_elements[1].second = gun0;
             }
         }
 
@@ -884,11 +821,10 @@ int main() {
                 ammo = AMMO_MAX;
                 reloading = false;
                 shooting = 0;
-                //ui_elements[1].second = gun0;
             }
         }
 
-        // gun viewmodel 'animation'
+        // gun viewmodel animation
         if (shooting == 1) {
             ui_elements[1].first = {IMAGE_HEIGHT-9, IMAGE_WIDTH-41};
         } else if (shooting == 0) {
@@ -906,7 +842,7 @@ int main() {
         QueryPerformanceCounter(&t_end);
         double t_delta = (double)(t_end.QuadPart - t_start.QuadPart) * 1000.0 / t_freq.QuadPart;
 
-        Sleep(max(FRAME_DUR-t_delta, 0.0)); // 90 hz max
+        Sleep(max(FRAME_DUR-t_delta, 0.0));
     }
     return 0;
 }
