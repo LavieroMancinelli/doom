@@ -1,16 +1,16 @@
 # Terminal DOOM
-First-person 3D game that runs in the terminal on Windows, built from scratch in C++ with no graphics API (no OpenGL, DirectX, or third-party rendering library). Inspired by the original *DOOM* (1993) but built with a 3D polygon pipeline rather than DOOM's original raycasting approach.
+First-person 3D game that runs in the terminal on Windows, built from scratch in C++ with no graphics API (no OpenGL, DirectX, or third-party rendering library). Inspired by the original *DOOM* (1993), based on a 3D polygon pipeline instead of DOOM's original raycasting approach.
 <br></br>
 
 
 ![demo](./demo.gif)
 
 ## Overview
-The level is represented as a set of vertical quadrilateral planes in 3D space. Each frame, the camera's rigid pose is used to transform the points defining wall quads into camera space, clip them against the near plane, project thrm to screen space, and redraw the edges and interior space, after which they are rasterized into a fixed-size grid of ASCII characters and printed to the console. Quads are sorted at startup into a Binary Space Partitioning (BSP) tree, which the renderer walks every frame with a back-to-front painter's algorithm to determine draw order relative to the camera, interleaving walls and enemy sprites to compose each image.
+The level is represented as a set of vertical quadrilateral planes and sprite positions in 3D space. Each frame is constructed using the camera's rigid pose to transform wall quads into camera space, clip them against the near plane, project them to screen space, and redraw the edges and interior, whereafter they are rasterized into a grid of ASCII characters and printed to the console. This is enabled by sorting the quads into a Binary Space Partitioning (BSP) tree at startup, which the renderer traverses every frame in a back-to-front painter's algorithm to determine a camera-relative draw order for the quads that the sprites are also interleaved into. 
 
 ## Features
-- Full 3D environment built on polygonal transformation pipeline, avoiding raycasting, implemented with hand-written tensor operations, no external math or graphics library
-- Static BSP tree constructed at startup from level geometry and used each frame to create painter's algorithm back-to-front surface ordering
+- Full 3D environment rendering built on polygon transformation pipeline instead of raycasting, implemented with hand-written tensor operations, avoiding external graphics or math libraries
+- Static BSP tree constructed at startup from level geometry is used each frame to create efficient painter's algorithm back-to-front surface ordering
 - Near-plane clipping (Sutherland–Hodgman) to prevent geometry behind the camera from being rasterized
 - Segment-based collision detection against a set of collision polygons, independent of the rendered wall mesh
 - Basic gameplay implemented for demonstration with gun mechanics and distance-scaled enemy sprites sorted into painter's algorithm
@@ -23,8 +23,8 @@ The level is represented as a set of vertical quadrilateral planes in 3D space. 
         3. Recurse on the lists of polygons in front of or behind P to define the left and right children
 2. Gameplay/Render Loop: 
     1. Poll keyboard input and resolve movement, camera turn, shooting, and reload requests
-        - Movement requests are first checked against the collision polygon set: walk along the edges of every polygon and only approve the new position if it remains outisde the collision range of every edge
-        - Hit detection on shooting is accomplished with a simple trick: each enemy sprite is drawn using a unique set of characters, so a hit is recorded if the pixel rendered on top at the center of the screen is an enemy ASCII character, and the target destroyed is the enemy coded to that character
+        - Movement requests are first checked against the collision polygon set: walk along the edges of every polygon and only approve the new position if it remains outside the collision range of every edge
+        - Hit detection on shooting is accomplished with a simple trick: each enemy sprite is drawn using a unique set of characters, so a hit is recorded if the top pixel rendered at the center of the screen is an enemy ASCII character, and the target destroyed is the enemy coded to that character
     2. Traverse the BSP tree to obtain a back-to-front ordering (painter's algorithm) relative to the camera's position, also classifying sprites against each node to interleave them into the same order. 
         - Draw functions for polygons:
             1. Convert points from world to camera space
@@ -61,7 +61,7 @@ The game objective was made secondarily to the render pipeline, and is therefore
 | `W` / `A` / `S` / `D` | Move forward / left / back / right, relative to current facing |
 | Left / Right arrow keys | Turn camera left / right |
 | Spacebar | Fire gun |
-| `R` | Manually trigger a reload |
+| `R` | Reload gun manually |
 
 
 ## Configuration
